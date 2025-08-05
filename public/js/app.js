@@ -112,10 +112,26 @@ function setupModals() {
         openScenarioModal();
     });
     
+    // Add event listener for the alternative create scenario button if it exists
+    const createScenarioAlt = document.getElementById('create-scenario-alt');
+    if (createScenarioAlt) {
+        createScenarioAlt.addEventListener('click', () => {
+            openScenarioModal();
+        });
+    }
+    
     // Add investment button handler
     document.getElementById('add-investment').addEventListener('click', () => {
         addInvestmentInput();
     });
+    
+    // Add cancel button handler for the scenario modal
+    const cancelButton = document.getElementById('cancel-scenario');
+    if (cancelButton) {
+        cancelButton.addEventListener('click', () => {
+            closeScenarioModal();
+        });
+    }
 }
 
 // Set up form handlers

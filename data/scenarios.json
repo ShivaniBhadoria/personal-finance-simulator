@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": "1754388821820",
+    "name": "retire",
+    "description": "",
+    "createdAt": "2025-08-05T10:13:41.821Z",
+    "updatedAt": "2025-08-05T10:13:41.821Z",
+    "initialAmount": 0,
+    "monthlyIncome": 0,
+    "monthlyExpenses": 0,
+    "investments": [],
+    "savingsRate": 0,
+    "inflationRate": 2,
+    "timeframe": 10
+  }
+]
