@@ -29,7 +29,6 @@ jobs:
           
       - name: Install dependencies
         run: npm install @octokit/rest
-
       - name: Run PR review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
