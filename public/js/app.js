@@ -129,7 +129,24 @@ function setupModals() {
     const cancelButton = document.getElementById('cancel-scenario');
     if (cancelButton) {
         cancelButton.addEventListener('click', () => {
-            closeScenarioModal();
+            // Check if form has been modified
+            const form = document.getElementById('scenario-form');
+            const hasChanges = form && (
+                document.getElementById('scenario-name').value ||
+                document.getElementById('scenario-description').value ||
+                parseFloat(document.getElementById('scenario-initial').value) > 0 ||
+                document.querySelectorAll('.investment-input').length > 1
+            );
+            
+            if (hasChanges) {
+                // Show confirmation dialog
+                if (confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+                    closeScenarioModal();
+                }
+            } else {
+                // No changes, just close
+                closeScenarioModal();
+            }
         });
     }
 }
