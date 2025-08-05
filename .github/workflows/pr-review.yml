@@ -4,6 +4,11 @@ on:
   pull_request:
     types: [opened, synchronize]
 
+# Add explicit permissions for pull requests
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   review:
     runs-on: ubuntu-latest
@@ -24,7 +29,6 @@ jobs:
           
       - name: Install dependencies
         run: npm install @octokit/rest
-      
       - name: Run PR review
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
