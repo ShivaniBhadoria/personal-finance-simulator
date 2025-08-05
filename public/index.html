@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Finance Simulator</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <div class="logo">
+        <i class="fas fa-chart-line"></i>
+        <h1>FinSim</h1>
+      </div>
+      <nav class="main-nav">
+        <ul>
+          <li><a href="#" class="nav-link active" data-view="dashboard">Dashboard</a></li>
+          <li><a href="#" class="nav-link" data-view="scenarios">Scenarios</a></li>
+          <li><a href="#" class="nav-link" data-view="calculator">Calculator</a></li>
+          <li><a href="#" class="nav-link" data-view="about">About</a></li>
+        </ul>
+      </nav>
+    </header>
+
+    <main class="app-main">
+      <!-- Dashboard View -->
+      <section id="dashboard" class="view active">
+        <div class="dashboard-header">
+          <h2>Financial Dashboard</h2>
+          <button id="create-scenario" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Scenario
+          </button>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card summary-card">
+            <div class="card-header">
+              <h3>Financial Summary</h3>
+            </div>
+            <div class="card-body">
+              <div class="summary-item">
+                <span class="summary-label">Active Scenarios</span>
+                <span class="summary-value" id="active-scenarios">0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Net Worth Projection</span>
+                <span class="summary-value" id="net-worth-projection">$0</span>
+              </div>
+              <div class="summary-item">
+                <span class="summary-label">Monthly Savings</span>
+                <span class="summary-value" id="monthly-savings">$0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Net Worth Projection</h3>
+              <div class="card-actions">
+                <select id="projection-timeframe">
+                  <option value="5">5 Years</option>
+                  <option value="10" selected>10 Years</option>
+                  <option value="20">20 Years</option>
+                  <option value="30">30 Years</option>
+                </select>
+              </div>
+            </div>
+            <div class="card-body">
+              <canvas id="net-worth-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Income vs. Expenses</h3>
+            </div>
+            <div class="card-body">
+              <canvas id="income-expense-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="card recent-card">
+            <div class="card-header">
+              <h3>Recent Scenarios</h3>
+            </div>
+            <div class="card-body">
+              <div id="recent-scenarios-list" class="scenarios-list">
+                <!-- Scenarios will be populated here -->
+                <p class="empty-state">No scenarios created yet. Click "New Scenario" to get started.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scenarios View -->
+      <section id="scenarios" class="view">
+        <div class="scenarios-header">
+          <h2>My Financial Scenarios</h2>
+          <div class="scenarios-actions">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text" id="scenario-search" placeholder="Search scenarios...">
+            </div>
+            <button id="create-scenario-alt" class="btn btn-primary">
+              <i class="fas fa-plus"></i> New Scenario
+            </button>
+          </div>
+        </div>
+
+        <div class="scenarios-grid" id="scenarios-grid">
+          <!-- Scenarios will be populated here -->
+        </div>
+      </section>
+
+      <!-- Calculator View -->
+      <section id="calculator" class="view">
+        <div class="calculator-header">
+          <h2>Financial Calculator</h2>
+        </div>
+
+        <div class="calculator-grid">
+          <div class="card calculator-card">
+            <div class="card-header">
+              <h3>Investment Growth</h3>
+            </div>
+            <div class="card-body">
+              <form id="investment-form" class="calculator-form">
+                <div class="form-group">
+                  <label for="initial-investment">Initial Investment ($)</label>
+                  <input type="number" id="initial-investment" min="0" step="100" value="1000">
+                </div>
+                <div class="form-group">
+                  <label for="monthly-contribution">Monthly Contribution ($)</label>
+                  <input type="number" id="monthly-contribution" min="0" step="50" value="100">
+                </div>
+                <div class="form-group">
+                  <label for="annual-return">Annual Return (%)</label>
+                  <input type="number" id="annual-return" min="0" max="30" step="0.5" value="7">
+                </div>
+                <div class="form-group">
+                  <label for="investment-years">Years</label>
+                  <input type="number" id="investment-years" min="1" max="50" step="1" value="10">
+                </div>
+                <button type="submit" class="btn btn-primary">Calculate</button>
+              </form>
+              <div class="calculator-result" id="investment-result">
+                <div class="result-item">
+                  <span class="result-label">Final Balance:</span>
+                  <span class="result-value" id="investment-final-balance">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Total Contributions:</span>
+                  <span class="result-value" id="investment-total-contributions">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Total Interest:</span>
+                  <span class="result-value" id="investment-total-interest">$0</span>
+                </div>
+              </div>
+              <div class="calculator-chart-container">
+                <canvas id="investment-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card calculator-card">
+            <div class="card-header">
+              <h3>Retirement Planning</h3>
+            </div>
+            <div class="card-body">
+              <form id="retirement-form" class="calculator-form">
+                <div class="form-group">
+                  <label for="current-age">Current Age</label>
+                  <input type="number" id="current-age" min="18" max="80" step="1" value="30">
+                </div>
+                <div class="form-group">
+                  <label for="retirement-age">Retirement Age</label>
+                  <input type="number" id="retirement-age" min="40" max="90" step="1" value="65">
+                </div>
+                <div class="form-group">
+                  <label for="life-expectancy">Life Expectancy</label>
+                  <input type="number" id="life-expectancy" min="50" max="120" step="1" value="90">
+                </div>
+                <div class="form-group">
+                  <label for="current-savings">Current Savings ($)</label>
+                  <input type="number" id="current-savings" min="0" step="1000" value="50000">
+                </div>
+                <div class="form-group">
+                  <label for="monthly-savings">Monthly Savings ($)</label>
+                  <input type="number" id="monthly-savings" min="0" step="100" value="500">
+                </div>
+                <div class="form-group">
+                  <label for="retirement-expenses">Monthly Expenses in Retirement ($)</label>
+                  <input type="number" id="retirement-expenses" min="0" step="100" value="3000">
+                </div>
+                <div class="form-group">
+                  <label for="retirement-return">Annual Return (%)</label>
+                  <input type="number" id="retirement-return" min="0" max="20" step="0.5" value="7">
+                </div>
+                <div class="form-group">
+                  <label for="inflation-rate">Inflation Rate (%)</label>
+                  <input type="number" id="inflation-rate" min="0" max="10" step="0.1" value="2.5">
+                </div>
+                <button type="submit" class="btn btn-primary">Calculate</button>
+              </form>
+              <div class="calculator-result" id="retirement-result">
+                <div class="result-item">
+                  <span class="result-label">Retirement Savings:</span>
+                  <span class="result-value" id="retirement-savings">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Final Balance at Life Expectancy:</span>
+                  <span class="result-value" id="retirement-final-balance">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Sustainable:</span>
+                  <span class="result-value" id="retirement-sustainable">Unknown</span>
+                </div>
+              </div>
+              <div class="calculator-chart-container">
+                <canvas id="retirement-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card calculator-card">
+            <div class="card-header">
+              <h3>Debt Payoff</h3>
+            </div>
+            <div class="card-body">
+              <form id="debt-form" class="calculator-form">
+                <div class="form-group">
+                  <label for="debt-amount">Debt Amount ($)</label>
+                  <input type="number" id="debt-amount" min="0" step="1000" value="10000">
+                </div>
+                <div class="form-group">
+                  <label for="debt-interest">Interest Rate (%)</label>
+                  <input type="number" id="debt-interest" min="0" max="30" step="0.1" value="5">
+                </div>
+                <div class="form-group">
+                  <label for="debt-payment">Monthly Payment ($)</label>
+                  <input type="number" id="debt-payment" min="0" step="50" value="200">
+                </div>
+                <button type="submit" class="btn btn-primary">Calculate</button>
+              </form>
+              <div class="calculator-result" id="debt-result">
+                <div class="result-item">
+                  <span class="result-label">Time to Pay Off:</span>
+                  <span class="result-value" id="debt-time">0 months</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Total Interest Paid:</span>
+                  <span class="result-value" id="debt-interest-paid">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Total Amount Paid:</span>
+                  <span class="result-value" id="debt-total-paid">$0</span>
+                </div>
+              </div>
+              <div class="calculator-chart-container">
+                <canvas id="debt-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="card calculator-card">
+            <div class="card-header">
+              <h3>Budget Analysis</h3>
+            </div>
+            <div class="card-body">
+              <form id="budget-form" class="calculator-form">
+                <div class="form-group">
+                  <label for="monthly-income">Monthly Income ($)</label>
+                  <input type="number" id="monthly-income" min="0" step="100" value="5000">
+                </div>
+                <div class="form-group">
+                  <label for="savings-goal">Savings Goal (%)</label>
+                  <input type="number" id="savings-goal" min="0" max="100" step="1" value="20">
+                </div>
+                <div id="expense-inputs">
+                  <div class="expense-input">
+                    <div class="form-group">
+                      <label>Expense Category</label>
+                      <select class="expense-category">
+                        <option value="Housing">Housing</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Food">Food</option>
+                        <option value="Utilities">Utilities</option>
+                        <option value="Insurance">Insurance</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>Amount ($)</label>
+                      <input type="number" class="expense-amount" min="0" step="10" value="1000">
+                    </div>
+                    <button type="button" class="btn btn-icon remove-expense"><i class="fas fa-times"></i></button>
+                  </div>
+                </div>
+                <button type="button" id="add-expense" class="btn btn-secondary">
+                  <i class="fas fa-plus"></i> Add Expense
+                </button>
+                <button type="submit" class="btn btn-primary">Calculate</button>
+              </form>
+              <div class="calculator-result" id="budget-result">
+                <div class="result-item">
+                  <span class="result-label">Total Expenses:</span>
+                  <span class="result-value" id="budget-total-expenses">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Current Savings:</span>
+                  <span class="result-value" id="budget-current-savings">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Savings Rate:</span>
+                  <span class="result-value" id="budget-savings-rate">0%</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Meeting Savings Goal:</span>
+                  <span class="result-value" id="budget-goal-met">No</span>
+                </div>
+              </div>
+              <div class="calculator-chart-container">
+                <canvas id="budget-chart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- About View -->
+      <section id="about" class="view">
+        <div class="about-content">
+          <h2>About Personal Finance Simulator</h2>
+          <p>
+            The Personal Finance Simulator is a powerful tool designed to help you plan your financial future.
+            Create different scenarios, visualize the impact of your financial decisions, and make informed choices
+            about your money.
+          </p>
+          
+          <h3>Features</h3>
+          <ul>
+            <li>Create and save multiple financial scenarios</li>
+            <li>Calculate investment growth over time</li>
+            <li>Plan for retirement with detailed projections</li>
+            <li>Analyze debt payoff strategies</li>
+            <li>Visualize your budget and savings rate</li>
+            <li>Compare different financial strategies</li>
+          </ul>
+          
+          <h3>How to Use</h3>
+          <p>
+            Start by creating a new scenario from the Dashboard or Scenarios page. Enter your financial details
+            and the simulator will generate projections based on your inputs. Use the Calculator tools to perform
+            specific financial calculations and visualize the results.
+          </p>
+          
+          <h3>Privacy</h3>
+          <p>
+            All your financial data is stored locally on your device. No personal financial information is sent
+            to any external servers. You can safely use this tool without worrying about your financial data
+            being shared.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal for creating/editing scenarios -->
+    <div class="modal" id="scenario-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title">Create New Scenario</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="scenario-form">
+            <div class="form-group">
+              <label for="scenario-name">Scenario Name</label>
+              <input type="text" id="scenario-name" required placeholder="e.g., Retirement Plan 2025">
+            </div>
+            <div class="form-group">
+              <label for="scenario-description">Description</label>
+              <textarea id="scenario-description" rows="2" placeholder="Brief description of this financial scenario"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="scenario-initial">Initial Amount ($)</label>
+              <input type="number" id="scenario-initial" min="0" step="100" value="0">
+            </div>
+            <div class="form-group">
+              <label for="scenario-income">Monthly Income ($)</label>
+              <input type="number" id="scenario-income" min="0" step="100" value="0">
+            </div>
+            <div class="form-group">
+              <label for="scenario-expenses">Monthly Expenses ($)</label>
+              <input type="number" id="scenario-expenses" min="0" step="100" value="0">
+            </div>
+            <div class="form-group">
+              <label for="scenario-savings">Savings Rate (%)</label>
+              <input type="number" id="scenario-savings" min="0" max="100" step="1" value="0">
+            </div>
+            <div class="form-group">
+              <label for="scenario-inflation">Inflation Rate (%)</label>
+              <input type="number" id="scenario-inflation" min="0" max="20" step="0.1" value="2">
+            </div>
+            <div class="form-group">
+              <label for="scenario-timeframe">Timeframe (years)</label>
+              <input type="number" id="scenario-timeframe" min="1" max="50" step="1" value="10">
+            </div>
+            <div class="form-group">
+              <label>Investments</label>
+              <div id="investments-container">
+                <!-- Investment inputs will be added here -->
+              </div>
+              <button type="button" id="add-investment" class="btn btn-secondary">
+                <i class="fas fa-plus"></i> Add Investment
+              </button>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" id="cancel-scenario">Cancel</button>
+              <button type="submit" class="btn btn-primary" id="save-scenario">Save Scenario</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js for visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+  <!-- Main application JavaScript -->
+  <script src="/js/app.js"></script>
+</body>
+</html>
