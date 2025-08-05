@@ -309,6 +309,21 @@ body {
   border: 1px solid var(--border-color);
 }
 
+/* Form validation styles */
+.form-group.has-error input,
+.form-group.has-error select,
+.form-group.has-error textarea {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  display: block;
+}
+
 .calculator-result {
   margin-top: 1.5rem;
   padding: 1rem;

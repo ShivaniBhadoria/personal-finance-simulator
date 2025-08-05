@@ -333,6 +333,154 @@ function createPieChartConfig(label, labels, data) {
     };
 }
 
+/**
+ * Validate the scenario form
+ * @returns {Array} Array of validation errors
+ */
+function validateScenarioForm() {
+    const errors = [];
+    
+    // Validate scenario name (required)
+    const scenarioName = document.getElementById('scenario-name').value.trim();
+    if (!scenarioName) {
+        errors.push({
+            field: 'scenario-name',
+            message: 'Scenario name is required'
+        });
+    }
+    
+    // Validate numeric fields
+    const numericFields = [
+        { id: 'scenario-initial', name: 'Initial Amount', min: 0 },
+        { id: 'scenario-income', name: 'Monthly Income', min: 0 },
+        { id: 'scenario-expenses', name: 'Monthly Expenses', min: 0 },
+        { id: 'scenario-savings', name: 'Savings Rate', min: 0, max: 100 },
+        { id: 'scenario-inflation', name: 'Inflation Rate', min: 0, max: 20 },
+        { id: 'scenario-timeframe', name: 'Timeframe', min: 1, max: 50 }
+    ];
+    
+    numericFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        const value = element.value.trim();
+        
+        if (value === '') {
+            errors.push({
+                field: field.id,
+                message: `${field.name} is required`
+            });
+        } else {
+            const numValue = parseFloat(value);
+            
+            if (isNaN(numValue)) {
+                errors.push({
+                    field: field.id,
+                    message: `${field.name} must be a valid number`
+                });
+            } else if (field.min !== undefined && numValue < field.min) {
+                errors.push({
+                    field: field.id,
+                    message: `${field.name} must be at least ${field.min}`
+                });
+            } else if (field.max !== undefined && numValue > field.max) {
+                errors.push({
+                    field: field.id,
+                    message: `${field.name} cannot exceed ${field.max}`
+                });
+            }
+        }
+    });
+    
+    // Validate investments
+    const investmentInputs = document.querySelectorAll('.investment-input');
+    if (investmentInputs.length > 0) {
+        let hasValidInvestment = false;
+        
+        investmentInputs.forEach((input, index) => {
+            const nameInput = input.querySelector('.investment-name');
+            const amountInput = input.querySelector('.investment-amount');
+            const rateInput = input.querySelector('.investment-rate');
+            
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+            
+            if (name || amount > 0 || rate > 0) {
+                // If any field is filled, all required fields must be valid
+                if (!name) {
+                    errors.push({
+                        field: `investment-${index}`,
+                        element: nameInput,
+                        message: 'Investment name is required'
+                    });
+                }
+                
+                if (amount <= 0 && rate <= 0) {
+                    errors.push({
+                        field: `investment-${index}`,
+                        element: amountInput,
+                        message: 'Either amount or rate must be greater than 0'
+                    });
+                }
+                
+                if (rate < 0 || rate > 100) {
+                    errors.push({
+                        field: `investment-${index}`,
+                        element: rateInput,
+                        message: 'Rate must be between 0 and 100%'
+                    });
+                }
+            }
+            
+            if (name && (amount > 0 || rate > 0)) {
+                hasValidInvestment = true;
+            }
+        });
+    }
+    
+    return errors;
+}
+
+/**
+ * Show validation error for a field
+ * @param {string} fieldId - ID of the field with error
+ * @param {string} message - Error message
+ */
+function showValidationError(fieldId, message) {
+    const field = document.getElementById(fieldId) || fieldId.element;
+    if (!field) return;
+    
+    // Add error class to form group
+    const formGroup = field.closest('.form-group');
+    if (formGroup) {
+        formGroup.classList.add('has-error');
+        
+        // Create error message element if it doesn't exist
+        let errorElement = formGroup.querySelector('.error-message');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            formGroup.appendChild(errorElement);
+        }
+        
+        errorElement.textContent = message;
+    }
+}
+
+/**
+ * Clear all validation errors
+ */
+function clearValidationErrors() {
+    // Remove error classes
+    document.querySelectorAll('.form-group.has-error').forEach(group => {
+        group.classList.remove('has-error');
+    });
+    
+    // Remove error messages
+    document.querySelectorAll('.error-message').forEach(element => {
+        element.remove();
+    });
+}
+
 // Utility functions
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-US', {
@@ -478,10 +626,23 @@ function addInvestmentInput(investment = {}) {
 async function handleScenarioSubmit(e) {
     e.preventDefault();
     
+    // Clear previous error messages
+    clearValidationErrors();
+    
+    // Validate form
+    const validationErrors = validateScenarioForm();
+    if (validationErrors.length > 0) {
+        // Display validation errors
+        validationErrors.forEach(error => {
+            showValidationError(error.field, error.message);
+        });
+        return;
+    }
+    
     // Get form data
     const formData = {
-        name: document.getElementById('scenario-name').value,
-        description: document.getElementById('scenario-description').value,
+        name: document.getElementById('scenario-name').value.trim(),
+        description: document.getElementById('scenario-description').value.trim(),
         initialAmount: parseFloat(document.getElementById('scenario-initial').value) || 0,
         monthlyIncome: parseFloat(document.getElementById('scenario-income').value) || 0,
         monthlyExpenses: parseFloat(document.getElementById('scenario-expenses').value) || 0,
@@ -493,8 +654,10 @@ async function handleScenarioSubmit(e) {
     
     // Get investments
     const investmentInputs = document.querySelectorAll('.investment-input');
+    let hasValidInvestments = false;
+    
     investmentInputs.forEach(input => {
-        const name = input.querySelector('.investment-name').value;
+        const name = input.querySelector('.investment-name').value.trim();
         const amount = parseFloat(input.querySelector('.investment-amount').value) || 0;
         const rate = parseFloat(input.querySelector('.investment-rate').value) || 0;
         
@@ -504,6 +667,7 @@ async function handleScenarioSubmit(e) {
                 amount,
                 rate
             });
+            hasValidInvestments = true;
         }
     });
     
@@ -534,7 +698,8 @@ async function handleScenarioSubmit(e) {
         }
         
         if (!response.ok) {
-            throw new Error('Failed to save scenario');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to save scenario');
         }
         
         // Close modal and refresh scenarios
@@ -544,7 +709,7 @@ async function handleScenarioSubmit(e) {
         
     } catch (error) {
         console.error('Error saving scenario:', error);
-        showNotification('Failed to save scenario', 'error');
+        showNotification(error.message || 'Failed to save scenario', 'error');
     }
 }
 
