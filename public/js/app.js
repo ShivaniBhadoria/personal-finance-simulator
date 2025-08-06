@@ -1516,12 +1516,11 @@ function updateRetirementTimeline(currentAge, retirementAge, lifeExpectancy) {
 async function handleDebtCalculation(e) {
     e.preventDefault();
     
-    const balance = parseFloat(document.getElementById('debt-balance').value) || 0;
-    const interestRate = parseFloat(document.getElementById('debt-rate').value) || 0;
+    const debtAmount = parseFloat(document.getElementById('debt-amount').value) || 0;
+    const interestRate = parseFloat(document.getElementById('debt-interest').value) || 0;
     const monthlyPayment = parseFloat(document.getElementById('debt-payment').value) || 0;
-    const additionalPayment = parseFloat(document.getElementById('debt-additional').value) || 0;
     
-    if (balance <= 0 || monthlyPayment <= 0) {
+    if (debtAmount <= 0 || monthlyPayment <= 0) {
         showNotification('Please enter valid debt details', 'error');
         return;
     }
@@ -1533,57 +1532,172 @@ async function handleDebtCalculation(e) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                balance,
+                debtAmount,
                 interestRate,
-                monthlyPayment,
-                additionalPayment
+                monthlyPayment
             })
         });
         
         if (!response.ok) {
-            throw new Error('Failed to calculate debt payoff');
+            const errorData = await response.json();
+            showNotification(errorData.message || 'Failed to calculate debt payoff', 'error');
+            return;
         }
         
         const result = await response.json();
         
         // Display results
-        document.getElementById('debt-result-months').textContent = result.months;
-        document.getElementById('debt-result-years').textContent = (result.months / 12).toFixed(1);
-        document.getElementById('debt-result-interest').textContent = formatCurrency(result.totalInterest);
-        document.getElementById('debt-result-payments').textContent = formatCurrency(result.totalPayments);
+        document.getElementById('debt-time').textContent = `${result.monthsToPayoff} months (${result.yearsToPayoff} years)`;
+        document.getElementById('debt-interest-paid').textContent = formatCurrency(result.totalInterestPaid);
+        document.getElementById('debt-total-paid').textContent = formatCurrency(result.totalPaid);
+        
+        // Update status indicator
+        const statusIndicator = document.getElementById('debt-status-indicator');
+        const statusMessage = document.getElementById('debt-status-message');
+        
+        // Set status based on payoff time
+        if (result.yearsToPayoff <= 3) {
+            statusIndicator.className = 'status-indicator success';
+            statusMessage.textContent = 'Great! You will be debt-free in a short time.';
+        } else if (result.yearsToPayoff <= 7) {
+            statusIndicator.className = 'status-indicator warning';
+            statusMessage.textContent = 'You are on track to eliminate your debt in a reasonable timeframe.';
+        } else {
+            statusIndicator.className = 'status-indicator danger';
+            statusMessage.textContent = 'Consider increasing your monthly payment to pay off debt faster.';
+        }
+        
+        // Display payment strategies if available
+        if (result.strategies && result.strategies.length > 0) {
+            // Create strategies section if it doesn't exist
+            let strategiesSection = document.getElementById('debt-strategies');
+            if (!strategiesSection) {
+                strategiesSection = document.createElement('div');
+                strategiesSection.id = 'debt-strategies';
+                strategiesSection.className = 'strategies-section';
+                document.getElementById('debt-result').appendChild(strategiesSection);
+            } else {
+                strategiesSection.innerHTML = '';
+            }
+            
+            // Add header
+            const header = document.createElement('h5');
+            header.textContent = 'Payment Strategies';
+            strategiesSection.appendChild(header);
+            
+            // Add strategies
+            result.strategies.forEach(strategy => {
+                const strategyItem = document.createElement('div');
+                strategyItem.className = 'strategy-item';
+                
+                const description = document.createElement('div');
+                description.className = 'strategy-description';
+                description.textContent = strategy.description;
+                
+                const savings = document.createElement('div');
+                savings.className = 'strategy-savings';
+                savings.innerHTML = `Save <strong>${strategy.monthsSaved} months</strong> and <strong>${formatCurrency(strategy.interestSaved)}</strong> in interest`;
+                
+                strategyItem.appendChild(description);
+                strategyItem.appendChild(savings);
+                strategiesSection.appendChild(strategyItem);
+            });
+        }
         
         // Update chart
-        updateDebtChart(result.paymentSchedule);
+        updateDebtChart(result.payoffData);
         
-        // Show results section
-        document.getElementById('debt-results').classList.remove('hidden');
+        // Show results section and chart
+        document.getElementById('debt-result').classList.remove('hidden');
+        document.getElementById('debt-chart-container').classList.remove('hidden');
         
     } catch (error) {
         console.error('Error calculating debt payoff:', error);
-        showNotification('Failed to calculate debt payoff', 'error');
+        showNotification('Failed to calculate debt payoff. Please try again.', 'error');
     }
 }
 
 /**
  * Update the debt payoff chart with calculation results
- * @param {Array} paymentSchedule - Array of monthly payment data
+ * @param {Array} payoffData - Array of monthly payment data
  */
-function updateDebtChart(paymentSchedule) {
-    if (!charts.debtPayoff) return;
+function updateDebtChart(payoffData) {
+    const ctx = document.getElementById('debt-chart').getContext('2d');
     
-    // Group by quarters for better visualization
-    const labels = [];
-    const data = [];
-    
-    for (let i = 0; i < paymentSchedule.length; i += 3) {
-        const month = i + 1;
-        labels.push(`Month ${month}`);
-        data.push(paymentSchedule[i].remainingBalance);
+    // If chart exists, destroy it first
+    if (charts.debtPayoff) {
+        charts.debtPayoff.destroy();
     }
     
-    charts.debtPayoff.data.labels = labels;
-    charts.debtPayoff.data.datasets[0].data = data;
-    charts.debtPayoff.update();
+    // Prepare data for chart
+    const labels = [];
+    const balanceData = [];
+    const interestData = [];
+    
+    payoffData.forEach(data => {
+        labels.push(`Month ${data.month}`);
+        balanceData.push(data.balance);
+        interestData.push(data.interest);
+    });
+    
+    // Create new chart
+    charts.debtPayoff = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Remaining Balance',
+                    data: balanceData,
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    tension: 0.1
+                },
+                {
+                    label: 'Monthly Interest',
+                    data: interestData,
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('en-US', {
+                                    style: 'currency',
+                                    currency: 'USD'
+                                }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
 
 /**

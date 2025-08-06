@@ -355,25 +355,51 @@
 
           <div class="card calculator-card">
             <div class="card-header">
-              <h3>Debt Payoff</h3>
+              <h3>Debt Payoff Calculator</h3>
             </div>
             <div class="card-body">
               <form id="debt-form" class="calculator-form">
                 <div class="form-group">
-                  <label for="debt-amount">Debt Amount ($)</label>
-                  <input type="number" id="debt-amount" min="0" step="1000" value="10000">
+                  <label for="debt-amount">
+                    Debt Amount ($)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">The total amount of debt you want to pay off</span>
+                    </span>
+                  </label>
+                  <input type="number" id="debt-amount" min="0" step="100" value="10000" placeholder="e.g., 10000">
                 </div>
                 <div class="form-group">
-                  <label for="debt-interest">Interest Rate (%)</label>
-                  <input type="number" id="debt-interest" min="0" max="30" step="0.1" value="5">
+                  <label for="debt-interest">
+                    Interest Rate (%)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">Annual interest rate on your debt</span>
+                    </span>
+                  </label>
+                  <input type="number" id="debt-interest" min="0" max="30" step="0.1" value="5" placeholder="e.g., 5">
                 </div>
                 <div class="form-group">
-                  <label for="debt-payment">Monthly Payment ($)</label>
-                  <input type="number" id="debt-payment" min="0" step="50" value="200">
+                  <label for="debt-payment">
+                    Monthly Payment ($)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">How much you plan to pay each month</span>
+                    </span>
+                  </label>
+                  <input type="number" id="debt-payment" min="0" step="50" value="200" placeholder="e.g., 200">
                 </div>
-                <button type="submit" class="btn btn-primary">Calculate</button>
+                <div class="form-actions">
+                  <button type="reset" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Calculate</button>
+                </div>
               </form>
-              <div class="calculator-result" id="debt-result">
+              <div class="calculator-result hidden" id="debt-result">
+                <h4 class="result-header">Debt Payoff Summary</h4>
+                <div class="result-status">
+                  <div class="status-indicator" id="debt-status-indicator"></div>
+                  <div class="status-message" id="debt-status-message">Your debt payoff plan</div>
+                </div>
                 <div class="result-item">
                   <span class="result-label">Time to Pay Off:</span>
                   <span class="result-value" id="debt-time">0 months</span>
@@ -387,7 +413,7 @@
                   <span class="result-value" id="debt-total-paid">$0</span>
                 </div>
               </div>
-              <div class="calculator-chart-container">
+              <div class="calculator-chart-container hidden" id="debt-chart-container">
                 <canvas id="debt-chart"></canvas>
               </div>
             </div>
