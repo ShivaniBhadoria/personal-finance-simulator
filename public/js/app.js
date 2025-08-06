@@ -153,19 +153,71 @@ function setupModals() {
 
 // Set up form handlers
 function setupFormHandlers() {
-    // Scenario form submission
+    // Set up scenario form submission
     document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmit);
     
-    // Calculator form submissions
-    document.getElementById('investment-form').addEventListener('submit', handleInvestmentCalculation);
-    document.getElementById('retirement-form').addEventListener('submit', handleRetirementCalculation);
-    document.getElementById('debt-form').addEventListener('submit', handleDebtCalculation);
-    document.getElementById('budget-form').addEventListener('submit', handleBudgetCalculation);
+    // Set up calculator form submissions
+    const investmentForm = document.getElementById('investment-form');
+    if (investmentForm) {
+        investmentForm.addEventListener('submit', handleInvestmentCalculation);
+        
+        // Set up range slider for investment years
+        const yearsSlider = document.getElementById('investment-years');
+        const yearsValue = document.getElementById('years-value');
+        
+        if (yearsSlider && yearsValue) {
+            // Update the range value display when slider changes
+            yearsSlider.addEventListener('input', function() {
+                yearsValue.textContent = this.value;
+                
+                // Update the background size to show filled track
+                const percent = ((this.value - this.min) / (this.max - this.min)) * 100;
+                this.style.backgroundSize = percent + '% 100%';
+            });
+            
+            // Initialize the background size
+            const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
+            yearsSlider.style.backgroundSize = percent + '% 100%';
+        }
+        
+        // Add reset handler to clear results when form is reset
+        investmentForm.addEventListener('reset', function() {
+            document.getElementById('investment-results').classList.add('hidden');
+            setTimeout(() => {
+                // Reset range slider value display and background
+                if (yearsSlider && yearsValue) {
+                    yearsValue.textContent = yearsSlider.value;
+                    const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
+                    yearsSlider.style.backgroundSize = percent + '% 100%';
+                }
+            }, 10);
+        });
+    }
     
-    // Add expense button handler
-    document.getElementById('add-expense').addEventListener('click', () => {
-        addExpenseInput();
-    });
+    // Set up other calculator form submissions
+    const retirementForm = document.getElementById('retirement-form');
+    if (retirementForm) {
+        retirementForm.addEventListener('submit', handleRetirementCalculation);
+    }
+    
+    const debtForm = document.getElementById('debt-form');
+    if (debtForm) {
+        debtForm.addEventListener('submit', handleDebtCalculation);
+    }
+    
+    const budgetForm = document.getElementById('budget-form');
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', handleBudgetCalculation);
+    }
+    
+    // Set up search functionality
+    const scenarioSearch = document.getElementById('scenario-search');
+    if (scenarioSearch) {
+        scenarioSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterScenarios(searchTerm);
+        });
+    }
 }
 
 // Initialize charts for the application
@@ -497,17 +549,55 @@ function formatDate(dateString) {
 }
 
 function showNotification(message, type = 'info') {
-    // Implementation for showing notifications
     const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
+    notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
     document.body.appendChild(notification);
     
-    // Auto-remove after 5 seconds
     setTimeout(() => {
-        notification.remove();
-    }, 5000);
+        notification.classList.add('show');
+    }, 10);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+// Highlight invalid form field
+function highlightInvalidField(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    // Add error class to parent form-group
+    const formGroup = field.closest('.form-group');
+    if (formGroup) {
+        formGroup.classList.add('has-error');
+        
+        // Add error message if it doesn't exist
+        if (!formGroup.querySelector('.error-message')) {
+            const errorMessage = document.createElement('span');
+            errorMessage.className = 'error-message';
+            errorMessage.textContent = 'Please enter a valid value';
+            formGroup.appendChild(errorMessage);
+        }
+        
+        // Focus on the field
+        field.focus();
+        
+        // Remove error class when user corrects the input
+        field.addEventListener('input', function onInput() {
+            formGroup.classList.remove('has-error');
+            const errorMessage = formGroup.querySelector('.error-message');
+            if (errorMessage) {
+                formGroup.removeChild(errorMessage);
+            }
+            field.removeEventListener('input', onInput);
+        });
+    }
 }
 
 /**
@@ -1095,22 +1185,43 @@ async function handleInvestmentCalculation(e) {
     const annualRate = parseFloat(document.getElementById('investment-rate').value) || 0;
     const years = parseInt(document.getElementById('investment-years').value) || 0;
     
-    if (principal <= 0 || years <= 0) {
-        showNotification('Please enter valid investment details', 'error');
+    // Enhanced validation with detailed error messages
+    if (principal < 0) {
+        showNotification('Initial investment cannot be negative', 'error');
+        highlightInvalidField('investment-principal');
         return;
     }
+    if (monthlyContribution < 0) {
+        showNotification('Monthly contribution cannot be negative', 'error');
+        highlightInvalidField('investment-monthly');
+        return;
+    }
+    if (annualRate < 0 || annualRate > 100) {
+        showNotification('Annual return rate must be between 0 and 100', 'error');
+        highlightInvalidField('investment-rate');
+        return;
+    }
+    if (years <= 0) {
+        showNotification('Investment period must be greater than 0', 'error');
+        highlightInvalidField('investment-years');
+        return;
+    }
+    
+    // Show loading state
+    const calculateButton = document.querySelector('#investment-form button[type="submit"]');
+    const originalButtonText = calculateButton.innerHTML;
+    calculateButton.disabled = true;
+    calculateButton.innerHTML = '<i class="fas fa-spinner"></i> Calculating...';
     
     try {
         const response = await fetch('/api/calculations/investment-growth', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                principal,
-                monthlyContribution,
-                annualRate,
-                years
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                initialAmount: principal, 
+                monthlyContribution: monthlyContribution, 
+                annualReturnRate: annualRate, 
+                years: years 
             })
         });
         
@@ -1120,21 +1231,55 @@ async function handleInvestmentCalculation(e) {
         
         const result = await response.json();
         
-        // Display results
+        // Update result display with animation
+        const resultElement = document.getElementById('investment-result');
+        const chartContainer = document.getElementById('investment-chart-container');
+        
+        // Calculate total contributions
+        const totalContributions = principal + (monthlyContribution * years * 12);
+        
+        // Calculate ROI
+        const roi = ((result.finalBalance - totalContributions) / totalContributions) * 100;
+        
+        // Update result values with animation
         document.getElementById('investment-result-final').textContent = formatCurrency(result.finalBalance);
-        document.getElementById('investment-result-principal').textContent = formatCurrency(principal);
-        document.getElementById('investment-result-contributions').textContent = formatCurrency(result.totalContributions);
+        document.getElementById('investment-result-contributions').textContent = formatCurrency(totalContributions);
         document.getElementById('investment-result-interest').textContent = formatCurrency(result.totalInterest);
+        document.getElementById('investment-result-roi').textContent = roi.toFixed(2) + '%';
+        
+        // Update percentage bars
+        const contributionsPercentage = (totalContributions / result.finalBalance) * 100;
+        const interestPercentage = (result.totalInterest / result.finalBalance) * 100;
+        
+        document.getElementById('contributions-percentage').textContent = contributionsPercentage.toFixed(1) + '%';
+        document.getElementById('interest-percentage').textContent = interestPercentage.toFixed(1) + '%';
+        
+        // Animate the percentage bars
+        setTimeout(() => {
+            document.getElementById('contributions-percentage-bar').style.width = contributionsPercentage + '%';
+            document.getElementById('interest-percentage-bar').style.width = interestPercentage + '%';
+        }, 100);
+        
+        // Show results with fade-in effect
+        resultElement.classList.remove('hidden');
+        chartContainer.classList.remove('hidden');
+        setTimeout(() => {
+            resultElement.classList.add('fade-in');
+        }, 50);
         
         // Update chart
-        updateInvestmentChart(result.yearlyData);
+        updateInvestmentChart(result.monthlyData);
         
-        // Show results section
-        document.getElementById('investment-results').classList.remove('hidden');
+        // Highlight the final balance
+        const finalBalanceItem = document.querySelector('#investment-result .result-item:first-of-type');
+        finalBalanceItem.classList.add('highlight-result');
         
+        showNotification('Investment growth calculation complete!', 'success');
     } catch (error) {
-        console.error('Error calculating investment growth:', error);
-        showNotification('Failed to calculate investment growth', 'error');
+        showNotification('Failed to calculate investment growth: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        calculateButton.disabled = false;
     }
 }
 
