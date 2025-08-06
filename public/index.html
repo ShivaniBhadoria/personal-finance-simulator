@@ -173,55 +173,132 @@
             </div>
             <div class="card-body">
               <form id="retirement-form" class="calculator-form">
-                <div class="form-group">
-                  <label for="current-age">Current Age</label>
-                  <input type="number" id="current-age" min="18" max="80" step="1" value="30">
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label for="current-age">
+                      Current Age
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Your current age in years</span>
+                      </span>
+                    </label>
+                    <input type="number" id="current-age" min="18" max="80" step="1" value="30" class="form-control">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="retirement-age">
+                      Retirement Age
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Age when you plan to stop working</span>
+                      </span>
+                    </label>
+                    <input type="range" id="retirement-age" min="40" max="90" step="1" value="65">
+                    <div class="range-value"><span id="retirement-age-value">65</span> years</div>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="life-expectancy">
+                      Life Expectancy
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Estimated age for retirement planning</span>
+                      </span>
+                    </label>
+                    <input type="number" id="life-expectancy" min="50" max="120" step="1" value="90" class="form-control">
+                  </div>
                 </div>
+                
                 <div class="form-group">
-                  <label for="retirement-age">Retirement Age</label>
-                  <input type="number" id="retirement-age" min="40" max="90" step="1" value="65">
+                  <label for="current-savings">
+                    Current Retirement Savings ($)
+                    <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">Total amount currently saved for retirement</span>
+                    </span>
+                  </label>
+                  <input type="number" id="current-savings" min="0" step="1000" value="50000" placeholder="e.g., 50000">
                 </div>
-                <div class="form-group">
-                  <label for="life-expectancy">Life Expectancy</label>
-                  <input type="number" id="life-expectancy" min="50" max="120" step="1" value="90">
+                
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="monthly-savings">
+                      Monthly Contributions ($)
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Amount you save each month toward retirement</span>
+                      </span>
+                    </label>
+                    <input type="number" id="monthly-savings" min="0" step="100" value="500" placeholder="e.g., 500">
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="retirement-expenses">
+                      Monthly Expenses in Retirement ($)
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Estimated monthly expenses after retirement</span>
+                      </span>
+                    </label>
+                    <input type="number" id="retirement-expenses" min="0" step="100" value="3000" placeholder="e.g., 3000">
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="current-savings">Current Savings ($)</label>
-                  <input type="number" id="current-savings" min="0" step="1000" value="50000">
+                
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="retirement-return">
+                      Expected Annual Return (%)
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Average annual investment return rate</span>
+                      </span>
+                    </label>
+                    <input type="number" id="retirement-return" min="0" max="20" step="0.5" value="7" placeholder="e.g., 7">
+                  </div>
+                  <div class="form-group col-md-6">
+                    <label for="inflation-rate">
+                      Inflation Rate (%)
+                      <span class="form-tooltip"><i class="fas fa-info-circle"></i>
+                        <span class="tooltip-text">Expected annual inflation rate</span>
+                      </span>
+                    </label>
+                    <input type="number" id="inflation-rate" min="0" max="10" step="0.1" value="2.5" placeholder="e.g., 2.5">
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label for="monthly-savings">Monthly Savings ($)</label>
-                  <input type="number" id="monthly-savings" min="0" step="100" value="500">
+                
+                <div class="form-actions">
+                  <button type="reset" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Calculate</button>
                 </div>
-                <div class="form-group">
-                  <label for="retirement-expenses">Monthly Expenses in Retirement ($)</label>
-                  <input type="number" id="retirement-expenses" min="0" step="100" value="3000">
-                </div>
-                <div class="form-group">
-                  <label for="retirement-return">Annual Return (%)</label>
-                  <input type="number" id="retirement-return" min="0" max="20" step="0.5" value="7">
-                </div>
-                <div class="form-group">
-                  <label for="inflation-rate">Inflation Rate (%)</label>
-                  <input type="number" id="inflation-rate" min="0" max="10" step="0.1" value="2.5">
-                </div>
-                <button type="submit" class="btn btn-primary">Calculate</button>
               </form>
-              <div class="calculator-result" id="retirement-result">
+              <div class="calculator-result hidden" id="retirement-result">
+                <h4 class="result-header">Retirement Projection Summary</h4>
+                
+                <div class="result-status" id="retirement-status-container">
+                  <div class="status-indicator" id="retirement-status-indicator"></div>
+                  <div class="status-message" id="retirement-status-message">Calculating...</div>
+                </div>
+                
                 <div class="result-item">
-                  <span class="result-label">Retirement Savings:</span>
+                  <span class="result-label">Retirement Savings at Age <span id="retirement-age-display">65</span>:</span>
                   <span class="result-value" id="retirement-savings">$0</span>
                 </div>
+                
                 <div class="result-item">
-                  <span class="result-label">Final Balance at Life Expectancy:</span>
+                  <span class="result-label">Monthly Retirement Income:</span>
+                  <span class="result-value" id="retirement-monthly-income">$0</span>
+                </div>
+                
+                <div class="result-item">
+                  <span class="result-label">Final Balance at Age <span id="life-expectancy-display">90</span>:</span>
                   <span class="result-value" id="retirement-final-balance">$0</span>
                 </div>
-                <div class="result-item">
-                  <span class="result-label">Sustainable:</span>
-                  <span class="result-value" id="retirement-sustainable">Unknown</span>
+                
+                <div class="retirement-timeline">
+                  <div class="timeline-marker current-age" id="timeline-current-age">
+                    <div class="marker-label">Current</div>
+                  </div>
+                  <div class="timeline-marker retirement-age" id="timeline-retirement-age">
+                    <div class="marker-label">Retirement</div>
+                  </div>
+                  <div class="timeline-marker life-expectancy" id="timeline-life-expectancy">
+                    <div class="marker-label">Life Expectancy</div>
+                  </div>
+                  <div class="timeline-bar"></div>
                 </div>
               </div>
-              <div class="calculator-chart-container">
+              
+              <div class="calculator-chart-container hidden" id="retirement-chart-container">
                 <canvas id="retirement-chart"></canvas>
               </div>
             </div>

@@ -310,25 +310,131 @@ body {
 }
 
 .calculator-result {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background-color: #f3f4f6;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
   border-radius: var(--radius);
+  background-color: var(--bg-light);
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.calculator-result.hidden {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  border: none;
+}
+
+.result-header {
+  margin-bottom: 1.5rem;
+  color: var(--text-dark);
+  text-align: center;
+  font-size: 1.25rem;
+}
+
+.result-status {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background-color: #f8f9fa;
+}
+
+.status-indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.status-indicator.sustainable {
+  background-color: #28a745;
+  box-shadow: 0 0 8px rgba(40, 167, 69, 0.6);
+}
+
+.status-indicator.unsustainable {
+  background-color: #dc3545;
+  box-shadow: 0 0 8px rgba(220, 53, 69, 0.6);
+}
+
+.status-message {
+  font-weight: 500;
+  flex-grow: 1;
 }
 
 .result-item {
+  margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.result-label {
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .result-value {
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1.1rem;
 }
 
-.calculator-chart-container {
-  margin-top: 1.5rem;
-  height: 300px;
+.retirement-timeline {
+  position: relative;
+  height: 60px;
+  margin: 2rem 0 1rem;
+}
+
+.timeline-bar {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(to right, #6c757d, #17a2b8, #28a745);
+  border-radius: 2px;
+}
+
+.timeline-marker {
+  position: absolute;
+  top: 22px;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: white;
+  border: 3px solid;
+  z-index: 1;
+}
+
+.timeline-marker.current-age {
+  border-color: #6c757d;
+}
+
+.timeline-marker.retirement-age {
+  border-color: #17a2b8;
+}
+
+.timeline-marker.life-expectancy {
+  border-color: #28a745;
+}
+
+.marker-label {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  color: var(--text-dark);
+  font-weight: 500;
 }
 
 /* Expense Inputs */
