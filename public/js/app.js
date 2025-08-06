@@ -153,16 +153,76 @@ function setupModals() {
 
 // Set up form handlers
 function setupFormHandlers() {
-    // Scenario form submission
+    // Set up scenario form submission
     document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmit);
     
+<<<<<<< HEAD
     // Calculator form submissions
     initializeCalculatorForms();
+=======
+    // Set up calculator form submissions
+    const investmentForm = document.getElementById('investment-form');
+    if (investmentForm) {
+        investmentForm.addEventListener('submit', handleInvestmentCalculation);
+        
+        // Set up range slider for investment years
+        const yearsSlider = document.getElementById('investment-years');
+        const yearsValue = document.getElementById('years-value');
+        
+        if (yearsSlider && yearsValue) {
+            // Update the range value display when slider changes
+            yearsSlider.addEventListener('input', function() {
+                yearsValue.textContent = this.value;
+                
+                // Update the background size to show filled track
+                const percent = ((this.value - this.min) / (this.max - this.min)) * 100;
+                this.style.backgroundSize = percent + '% 100%';
+            });
+            
+            // Initialize the background size
+            const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
+            yearsSlider.style.backgroundSize = percent + '% 100%';
+        }
+        
+        // Add reset handler to clear results when form is reset
+        investmentForm.addEventListener('reset', function() {
+            document.getElementById('investment-results').classList.add('hidden');
+            setTimeout(() => {
+                // Reset range slider value display and background
+                if (yearsSlider && yearsValue) {
+                    yearsValue.textContent = yearsSlider.value;
+                    const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
+                    yearsSlider.style.backgroundSize = percent + '% 100%';
+                }
+            }, 10);
+        });
+    }
+>>>>>>> main
     
-    // Add expense button handler
-    document.getElementById('add-expense').addEventListener('click', () => {
-        addExpenseInput();
-    });
+    // Set up other calculator form submissions
+    const retirementForm = document.getElementById('retirement-form');
+    if (retirementForm) {
+        retirementForm.addEventListener('submit', handleRetirementCalculation);
+    }
+    
+    const debtForm = document.getElementById('debt-form');
+    if (debtForm) {
+        debtForm.addEventListener('submit', handleDebtCalculation);
+    }
+    
+    const budgetForm = document.getElementById('budget-form');
+    if (budgetForm) {
+        budgetForm.addEventListener('submit', handleBudgetCalculation);
+    }
+    
+    // Set up search functionality
+    const scenarioSearch = document.getElementById('scenario-search');
+    if (scenarioSearch) {
+        scenarioSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            filterScenarios(searchTerm);
+        });
+    }
 }
 
 /**
@@ -367,6 +427,154 @@ function createPieChartConfig(label, labels, data) {
     };
 }
 
+/**
+ * Validate the scenario form
+ * @returns {Array} Array of validation errors
+ */
+function validateScenarioForm() {
+    const errors = [];
+    
+    // Validate scenario name (required)
+    const scenarioName = document.getElementById('scenario-name').value.trim();
+    if (!scenarioName) {
+        errors.push({
+            field: 'scenario-name',
+            message: 'Scenario name is required'
+        });
+    }
+    
+    // Validate numeric fields
+    const numericFields = [
+        { id: 'scenario-initial', name: 'Initial Amount', min: 0 },
+        { id: 'scenario-income', name: 'Monthly Income', min: 0 },
+        { id: 'scenario-expenses', name: 'Monthly Expenses', min: 0 },
+        { id: 'scenario-savings', name: 'Savings Rate', min: 0, max: 100 },
+        { id: 'scenario-inflation', name: 'Inflation Rate', min: 0, max: 20 },
+        { id: 'scenario-timeframe', name: 'Timeframe', min: 1, max: 50 }
+    ];
+    
+    numericFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        const value = element.value.trim();
+        
+        if (value === '') {
+            errors.push({
+                field: field.id,
+                message: `${field.name} is required`
+            });
+        } else {
+            const numValue = parseFloat(value);
+            
+            if (isNaN(numValue)) {
+                errors.push({
+                    field: field.id,
+                    message: `${field.name} must be a valid number`
+                });
+            } else if (field.min !== undefined && numValue < field.min) {
+                errors.push({
+                    field: field.id,
+                    message: `${field.name} must be at least ${field.min}`
+                });
+            } else if (field.max !== undefined && numValue > field.max) {
+                errors.push({
+                    field: field.id,
+                    message: `${field.name} cannot exceed ${field.max}`
+                });
+            }
+        }
+    });
+    
+    // Validate investments
+    const investmentInputs = document.querySelectorAll('.investment-input');
+    if (investmentInputs.length > 0) {
+        let hasValidInvestment = false;
+        
+        investmentInputs.forEach((input, index) => {
+            const nameInput = input.querySelector('.investment-name');
+            const amountInput = input.querySelector('.investment-amount');
+            const rateInput = input.querySelector('.investment-rate');
+            
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+            
+            if (name || amount > 0 || rate > 0) {
+                // If any field is filled, all required fields must be valid
+                if (!name) {
+                    errors.push({
+                        field: `investment-${index}`,
+                        element: nameInput,
+                        message: 'Investment name is required'
+                    });
+                }
+                
+                if (amount <= 0 && rate <= 0) {
+                    errors.push({
+                        field: `investment-${index}`,
+                        element: amountInput,
+                        message: 'Either amount or rate must be greater than 0'
+                    });
+                }
+                
+                if (rate < 0 || rate > 100) {
+                    errors.push({
+                        field: `investment-${index}`,
+                        element: rateInput,
+                        message: 'Rate must be between 0 and 100%'
+                    });
+                }
+            }
+            
+            if (name && (amount > 0 || rate > 0)) {
+                hasValidInvestment = true;
+            }
+        });
+    }
+    
+    return errors;
+}
+
+/**
+ * Show validation error for a field
+ * @param {string} fieldId - ID of the field with error
+ * @param {string} message - Error message
+ */
+function showValidationError(fieldId, message) {
+    const field = document.getElementById(fieldId) || fieldId.element;
+    if (!field) return;
+    
+    // Add error class to form group
+    const formGroup = field.closest('.form-group');
+    if (formGroup) {
+        formGroup.classList.add('has-error');
+        
+        // Create error message element if it doesn't exist
+        let errorElement = formGroup.querySelector('.error-message');
+        if (!errorElement) {
+            errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            formGroup.appendChild(errorElement);
+        }
+        
+        errorElement.textContent = message;
+    }
+}
+
+/**
+ * Clear all validation errors
+ */
+function clearValidationErrors() {
+    // Remove error classes
+    document.querySelectorAll('.form-group.has-error').forEach(group => {
+        group.classList.remove('has-error');
+    });
+    
+    // Remove error messages
+    document.querySelectorAll('.error-message').forEach(element => {
+        element.remove();
+    });
+}
+
 // Utility functions
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-US', {
@@ -383,17 +591,55 @@ function formatDate(dateString) {
 }
 
 function showNotification(message, type = 'info') {
-    // Implementation for showing notifications
     const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
+    notification.className = `notification notification-${type}`;
     notification.textContent = message;
     
     document.body.appendChild(notification);
     
-    // Auto-remove after 5 seconds
     setTimeout(() => {
-        notification.remove();
-    }, 5000);
+        notification.classList.add('show');
+    }, 10);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 300);
+    }, 3000);
+}
+
+// Highlight invalid form field
+function highlightInvalidField(fieldId) {
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    // Add error class to parent form-group
+    const formGroup = field.closest('.form-group');
+    if (formGroup) {
+        formGroup.classList.add('has-error');
+        
+        // Add error message if it doesn't exist
+        if (!formGroup.querySelector('.error-message')) {
+            const errorMessage = document.createElement('span');
+            errorMessage.className = 'error-message';
+            errorMessage.textContent = 'Please enter a valid value';
+            formGroup.appendChild(errorMessage);
+        }
+        
+        // Focus on the field
+        field.focus();
+        
+        // Remove error class when user corrects the input
+        field.addEventListener('input', function onInput() {
+            formGroup.classList.remove('has-error');
+            const errorMessage = formGroup.querySelector('.error-message');
+            if (errorMessage) {
+                formGroup.removeChild(errorMessage);
+            }
+            field.removeEventListener('input', onInput);
+        });
+    }
 }
 
 /**
@@ -512,10 +758,23 @@ function addInvestmentInput(investment = {}) {
 async function handleScenarioSubmit(e) {
     e.preventDefault();
     
+    // Clear previous error messages
+    clearValidationErrors();
+    
+    // Validate form
+    const validationErrors = validateScenarioForm();
+    if (validationErrors.length > 0) {
+        // Display validation errors
+        validationErrors.forEach(error => {
+            showValidationError(error.field, error.message);
+        });
+        return;
+    }
+    
     // Get form data
     const formData = {
-        name: document.getElementById('scenario-name').value,
-        description: document.getElementById('scenario-description').value,
+        name: document.getElementById('scenario-name').value.trim(),
+        description: document.getElementById('scenario-description').value.trim(),
         initialAmount: parseFloat(document.getElementById('scenario-initial').value) || 0,
         monthlyIncome: parseFloat(document.getElementById('scenario-income').value) || 0,
         monthlyExpenses: parseFloat(document.getElementById('scenario-expenses').value) || 0,
@@ -524,11 +783,87 @@ async function handleScenarioSubmit(e) {
         timeframe: parseInt(document.getElementById('scenario-timeframe').value) || 10,
         investments: []
     };
+/**
+ * Handle scenario form submission
+ * @param {Event} e - Form submission event
+ */
+async function handleScenarioSubmit(e) {
+    e.preventDefault();
     
+    // Clear previous validation errors
+    clearValidationErrors();
+    
+    // Validate form
+    const errors = validateScenarioForm();
+    
+    // Display errors if any and stop submission
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            showValidationError(error.field, error.message);
+        });
+        
+        // Show summary notification for accessibility
+        showNotification(`Please fix ${errors.length} error${errors.length > 1 ? 's' : ''} in the form`, 'error');
+        return;
+    }
+    
+    // Proceed with form submission if valid
+    try {
+        // Show loading state
+        const submitButton = document.querySelector('#scenario-form button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+        
+        // Collect form data
+        const scenarioData = collectScenarioFormData();
+        
+        // Submit data
+        const response = await submitScenarioData(scenarioData);
+        
+        // Handle success
+        handleSuccessfulSubmission();
+        
+    } catch (error) {
+        // Handle error
+        console.error('Error saving scenario:', error);
+        showNotification(error.message || 'Failed to save scenario', 'error');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+    }
+}
+
+/**
+ * Collect all data from the scenario form
+ * @returns {Object} The collected form data
+ */
+function collectScenarioFormData() {
+    // Get basic scenario data
+    const scenarioData = {
+        name: document.getElementById('scenario-name').value.trim(),
+        initialAmount: parseFloat(document.getElementById('scenario-initial').value) || 0,
+        monthlyIncome: parseFloat(document.getElementById('scenario-income').value) || 0,
+        monthlyExpenses: parseFloat(document.getElementById('scenario-expenses').value) || 0,
+        investments: [],
+        goals: []
+    };
+    
+    // Collect investments
+    collectInvestments(scenarioData);
+    
+    // Collect goals
+    collectGoals(scenarioData);
+    
+    return scenarioData;
+}
     // Get investments
     const investmentInputs = document.querySelectorAll('.investment-input');
+    let hasValidInvestments = false;
+    
     investmentInputs.forEach(input => {
-        const name = input.querySelector('.investment-name').value;
+        const name = input.querySelector('.investment-name').value.trim();
         const amount = parseFloat(input.querySelector('.investment-amount').value) || 0;
         const rate = parseFloat(input.querySelector('.investment-rate').value) || 0;
         
@@ -538,6 +873,7 @@ async function handleScenarioSubmit(e) {
                 amount,
                 rate
             });
+            hasValidInvestments = true;
         }
     });
     
@@ -568,7 +904,8 @@ async function handleScenarioSubmit(e) {
         }
         
         if (!response.ok) {
-            throw new Error('Failed to save scenario');
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Failed to save scenario');
         }
         
         // Close modal and refresh scenarios
@@ -578,7 +915,7 @@ async function handleScenarioSubmit(e) {
         
     } catch (error) {
         console.error('Error saving scenario:', error);
-        showNotification('Failed to save scenario', 'error');
+        showNotification(error.message || 'Failed to save scenario', 'error');
     }
 }
 
@@ -890,22 +1227,43 @@ async function handleInvestmentCalculation(e) {
     const annualRate = parseFloat(document.getElementById('investment-rate').value) || 0;
     const years = parseInt(document.getElementById('investment-years').value) || 0;
     
-    if (principal <= 0 || years <= 0) {
-        showNotification('Please enter valid investment details', 'error');
+    // Enhanced validation with detailed error messages
+    if (principal < 0) {
+        showNotification('Initial investment cannot be negative', 'error');
+        highlightInvalidField('investment-principal');
         return;
     }
+    if (monthlyContribution < 0) {
+        showNotification('Monthly contribution cannot be negative', 'error');
+        highlightInvalidField('investment-monthly');
+        return;
+    }
+    if (annualRate < 0 || annualRate > 100) {
+        showNotification('Annual return rate must be between 0 and 100', 'error');
+        highlightInvalidField('investment-rate');
+        return;
+    }
+    if (years <= 0) {
+        showNotification('Investment period must be greater than 0', 'error');
+        highlightInvalidField('investment-years');
+        return;
+    }
+    
+    // Show loading state
+    const calculateButton = document.querySelector('#investment-form button[type="submit"]');
+    const originalButtonText = calculateButton.innerHTML;
+    calculateButton.disabled = true;
+    calculateButton.innerHTML = '<i class="fas fa-spinner"></i> Calculating...';
     
     try {
         const response = await fetch('/api/calculations/investment-growth', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                principal,
-                monthlyContribution,
-                annualRate,
-                years
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                initialAmount: principal, 
+                monthlyContribution: monthlyContribution, 
+                annualReturnRate: annualRate, 
+                years: years 
             })
         });
         
@@ -915,21 +1273,55 @@ async function handleInvestmentCalculation(e) {
         
         const result = await response.json();
         
-        // Display results
+        // Update result display with animation
+        const resultElement = document.getElementById('investment-result');
+        const chartContainer = document.getElementById('investment-chart-container');
+        
+        // Calculate total contributions
+        const totalContributions = principal + (monthlyContribution * years * 12);
+        
+        // Calculate ROI
+        const roi = ((result.finalBalance - totalContributions) / totalContributions) * 100;
+        
+        // Update result values with animation
         document.getElementById('investment-result-final').textContent = formatCurrency(result.finalBalance);
-        document.getElementById('investment-result-principal').textContent = formatCurrency(principal);
-        document.getElementById('investment-result-contributions').textContent = formatCurrency(result.totalContributions);
+        document.getElementById('investment-result-contributions').textContent = formatCurrency(totalContributions);
         document.getElementById('investment-result-interest').textContent = formatCurrency(result.totalInterest);
+        document.getElementById('investment-result-roi').textContent = roi.toFixed(2) + '%';
+        
+        // Update percentage bars
+        const contributionsPercentage = (totalContributions / result.finalBalance) * 100;
+        const interestPercentage = (result.totalInterest / result.finalBalance) * 100;
+        
+        document.getElementById('contributions-percentage').textContent = contributionsPercentage.toFixed(1) + '%';
+        document.getElementById('interest-percentage').textContent = interestPercentage.toFixed(1) + '%';
+        
+        // Animate the percentage bars
+        setTimeout(() => {
+            document.getElementById('contributions-percentage-bar').style.width = contributionsPercentage + '%';
+            document.getElementById('interest-percentage-bar').style.width = interestPercentage + '%';
+        }, 100);
+        
+        // Show results with fade-in effect
+        resultElement.classList.remove('hidden');
+        chartContainer.classList.remove('hidden');
+        setTimeout(() => {
+            resultElement.classList.add('fade-in');
+        }, 50);
         
         // Update chart
-        updateInvestmentChart(result.yearlyData);
+        updateInvestmentChart(result.monthlyData);
         
-        // Show results section
-        document.getElementById('investment-results').classList.remove('hidden');
+        // Highlight the final balance
+        const finalBalanceItem = document.querySelector('#investment-result .result-item:first-of-type');
+        finalBalanceItem.classList.add('highlight-result');
         
+        showNotification('Investment growth calculation complete!', 'success');
     } catch (error) {
-        console.error('Error calculating investment growth:', error);
-        showNotification('Failed to calculate investment growth', 'error');
+        showNotification('Failed to calculate investment growth: ' + error.message, 'error');
+    } finally {
+        // Restore button state
+        calculateButton.disabled = false;
     }
 }
 

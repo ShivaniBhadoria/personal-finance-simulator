@@ -130,38 +130,87 @@
             <div class="card-body">
               <form id="investment-form" class="calculator-form">
                 <div class="form-group">
-                  <label for="initial-investment">Initial Investment ($)</label>
-                  <input type="number" id="initial-investment" min="0" step="100" value="1000">
+                  <label for="investment-principal">
+                    Initial Investment ($)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">The amount you start with before any additional contributions.</span>
+                    </span>
+                  </label>
+                  <input type="number" id="investment-principal" min="0" step="100" value="1000" placeholder="e.g., 1000">
                 </div>
                 <div class="form-group">
-                  <label for="monthly-contribution">Monthly Contribution ($)</label>
-                  <input type="number" id="monthly-contribution" min="0" step="50" value="100">
+                  <label for="investment-monthly">
+                    Monthly Contribution ($)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">The amount you plan to add each month to your investment.</span>
+                    </span>
+                  </label>
+                  <input type="number" id="investment-monthly" min="0" step="50" value="100" placeholder="e.g., 100">
                 </div>
                 <div class="form-group">
-                  <label for="annual-return">Annual Return (%)</label>
-                  <input type="number" id="annual-return" min="0" max="30" step="0.5" value="7">
+                  <label for="investment-rate">
+                    Annual Return Rate (%)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">The expected annual rate of return on your investment. The historical average for the S&P 500 is around 7-10%.</span>
+                    </span>
+                  </label>
+                  <input type="number" id="investment-rate" min="0" max="30" step="0.1" value="7" placeholder="e.g., 7">
                 </div>
                 <div class="form-group">
-                  <label for="investment-years">Years</label>
-                  <input type="number" id="investment-years" min="1" max="50" step="1" value="10">
+                  <label for="investment-years">
+                    Investment Period (Years)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">The number of years you plan to keep your money invested.</span>
+                    </span>
+                  </label>
+                  <input type="range" id="investment-years" min="1" max="50" step="1" value="10">
+                  <div class="range-value"><span id="years-value">10</span> years</div>
                 </div>
-                <button type="submit" class="btn btn-primary">Calculate</button>
+                <div class="form-actions">
+                  <button type="reset" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Calculate</button>
+                </div>
               </form>
-              <div class="calculator-result" id="investment-result">
+              <div class="calculator-result hidden" id="investment-result">
+                <h4 class="result-header">Investment Growth Summary</h4>
                 <div class="result-item">
                   <span class="result-label">Final Balance:</span>
-                  <span class="result-value" id="investment-final-balance">$0</span>
+                  <span class="result-value" id="investment-result-final">$0</span>
                 </div>
                 <div class="result-item">
                   <span class="result-label">Total Contributions:</span>
-                  <span class="result-value" id="investment-total-contributions">$0</span>
+                  <span class="result-value" id="investment-result-contributions">$0</span>
                 </div>
                 <div class="result-item">
-                  <span class="result-label">Total Interest:</span>
-                  <span class="result-value" id="investment-total-interest">$0</span>
+                  <span class="result-label">Total Interest Earned:</span>
+                  <span class="result-value" id="investment-result-interest">$0</span>
+                </div>
+                <div class="result-item">
+                  <span class="result-label">Return on Investment (ROI):</span>
+                  <span class="result-value" id="investment-result-roi">0%</span>
+                </div>
+                <div class="result-breakdown">
+                  <div class="breakdown-item">
+                    <div class="breakdown-label">Your Contributions</div>
+                    <div class="breakdown-bar-container">
+                      <div class="breakdown-bar contributions-bar" id="contributions-percentage-bar"></div>
+                    </div>
+                    <div class="breakdown-value" id="contributions-percentage">0%</div>
+                  </div>
+                  <div class="breakdown-item">
+                    <div class="breakdown-label">Interest Earned</div>
+                    <div class="breakdown-bar-container">
+                      <div class="breakdown-bar interest-bar" id="interest-percentage-bar"></div>
+                    </div>
+                    <div class="breakdown-value" id="interest-percentage">0%</div>
+                  </div>
                 </div>
               </div>
-              <div class="calculator-chart-container">
+              <div class="calculator-chart-container hidden" id="investment-chart-container">
                 <canvas id="investment-chart"></canvas>
               </div>
             </div>
