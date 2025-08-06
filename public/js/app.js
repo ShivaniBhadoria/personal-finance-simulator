@@ -651,7 +651,81 @@ async function handleScenarioSubmit(e) {
         timeframe: parseInt(document.getElementById('scenario-timeframe').value) || 10,
         investments: []
     };
+/**
+ * Handle scenario form submission
+ * @param {Event} e - Form submission event
+ */
+async function handleScenarioSubmit(e) {
+    e.preventDefault();
     
+    // Clear previous validation errors
+    clearValidationErrors();
+    
+    // Validate form
+    const errors = validateScenarioForm();
+    
+    // Display errors if any and stop submission
+    if (errors.length > 0) {
+        errors.forEach(error => {
+            showValidationError(error.field, error.message);
+        });
+        
+        // Show summary notification for accessibility
+        showNotification(`Please fix ${errors.length} error${errors.length > 1 ? 's' : ''} in the form`, 'error');
+        return;
+    }
+    
+    // Proceed with form submission if valid
+    try {
+        // Show loading state
+        const submitButton = document.querySelector('#scenario-form button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving...';
+        
+        // Collect form data
+        const scenarioData = collectScenarioFormData();
+        
+        // Submit data
+        const response = await submitScenarioData(scenarioData);
+        
+        // Handle success
+        handleSuccessfulSubmission();
+        
+    } catch (error) {
+        // Handle error
+        console.error('Error saving scenario:', error);
+        showNotification(error.message || 'Failed to save scenario', 'error');
+    } finally {
+        // Reset button state
+        submitButton.disabled = false;
+        submitButton.textContent = originalButtonText;
+    }
+}
+
+/**
+ * Collect all data from the scenario form
+ * @returns {Object} The collected form data
+ */
+function collectScenarioFormData() {
+    // Get basic scenario data
+    const scenarioData = {
+        name: document.getElementById('scenario-name').value.trim(),
+        initialAmount: parseFloat(document.getElementById('scenario-initial').value) || 0,
+        monthlyIncome: parseFloat(document.getElementById('scenario-income').value) || 0,
+        monthlyExpenses: parseFloat(document.getElementById('scenario-expenses').value) || 0,
+        investments: [],
+        goals: []
+    };
+    
+    // Collect investments
+    collectInvestments(scenarioData);
+    
+    // Collect goals
+    collectGoals(scenarioData);
+    
+    return scenarioData;
+}
     // Get investments
     const investmentInputs = document.querySelectorAll('.investment-input');
     let hasValidInvestments = false;
