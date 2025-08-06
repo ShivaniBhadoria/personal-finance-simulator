@@ -156,43 +156,8 @@ function setupFormHandlers() {
     // Set up scenario form submission
     document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmit);
     
-    // Set up calculator form submissions
-    const investmentForm = document.getElementById('investment-form');
-    if (investmentForm) {
-        investmentForm.addEventListener('submit', handleInvestmentCalculation);
-        
-        // Set up range slider for investment years
-        const yearsSlider = document.getElementById('investment-years');
-        const yearsValue = document.getElementById('years-value');
-        
-        if (yearsSlider && yearsValue) {
-            // Update the range value display when slider changes
-            yearsSlider.addEventListener('input', function() {
-                yearsValue.textContent = this.value;
-                
-                // Update the background size to show filled track
-                const percent = ((this.value - this.min) / (this.max - this.min)) * 100;
-                this.style.backgroundSize = percent + '% 100%';
-            });
-            
-            // Initialize the background size
-            const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
-            yearsSlider.style.backgroundSize = percent + '% 100%';
-        }
-        
-        // Add reset handler to clear results when form is reset
-        investmentForm.addEventListener('reset', function() {
-            document.getElementById('investment-results').classList.add('hidden');
-            setTimeout(() => {
-                // Reset range slider value display and background
-                if (yearsSlider && yearsValue) {
-                    yearsValue.textContent = yearsSlider.value;
-                    const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
-                    yearsSlider.style.backgroundSize = percent + '% 100%';
-                }
-            }, 10);
-        });
-    }
+    // Calculator form submissions
+    initializeCalculatorForms();
     
     // Set up other calculator form submissions
     const retirementForm = document.getElementById('retirement-form');
@@ -216,6 +181,43 @@ function setupFormHandlers() {
         scenarioSearch.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
             filterScenarios(searchTerm);
+        });
+    }
+}
+
+/**
+ * Initialize calculator forms with event listeners and interactive elements
+ */
+function initializeCalculatorForms() {
+    // Set up form event listeners
+    document.getElementById('investment-form').addEventListener('submit', handleInvestmentCalculation);
+    document.getElementById('retirement-form').addEventListener('submit', handleRetirementCalculation);
+    document.getElementById('debt-form').addEventListener('submit', handleDebtCalculation);
+    document.getElementById('budget-form').addEventListener('submit', handleBudgetCalculation);
+    
+    // Set up retirement age range slider
+    const retirementAgeSlider = document.getElementById('retirement-age');
+    if (retirementAgeSlider) {
+        retirementAgeSlider.addEventListener('input', function() {
+            document.getElementById('retirement-age-value').textContent = this.value;
+        });
+    }
+    
+    // Add reset button functionality for retirement form
+    const retirementForm = document.getElementById('retirement-form');
+    if (retirementForm) {
+        retirementForm.addEventListener('reset', function() {
+            // Hide results when form is reset
+            document.getElementById('retirement-result').classList.add('hidden');
+            document.getElementById('retirement-chart-container').classList.add('hidden');
+            
+            // Reset the retirement age slider value display
+            setTimeout(() => {
+                const retirementAgeSlider = document.getElementById('retirement-age');
+                if (retirementAgeSlider) {
+                    document.getElementById('retirement-age-value').textContent = retirementAgeSlider.value;
+                }
+            }, 0);
         });
     }
 }
@@ -1305,17 +1307,54 @@ function updateInvestmentChart(yearlyData) {
 async function handleRetirementCalculation(e) {
     e.preventDefault();
     
-    const currentAge = parseInt(document.getElementById('retirement-age').value) || 0;
-    const retirementAge = parseInt(document.getElementById('retirement-target-age').value) || 0;
-    const currentSavings = parseFloat(document.getElementById('retirement-savings').value) || 0;
-    const monthlySavings = parseFloat(document.getElementById('retirement-monthly').value) || 0;
+    // Get form inputs
+    const currentAge = parseInt(document.getElementById('current-age').value) || 0;
+    const retirementAge = parseInt(document.getElementById('retirement-age').value) || 0;
+    const lifeExpectancy = parseInt(document.getElementById('life-expectancy').value) || 0;
+    const currentSavings = parseFloat(document.getElementById('current-savings').value) || 0;
+    const monthlySavings = parseFloat(document.getElementById('monthly-savings').value) || 0;
+    const monthlyExpenses = parseFloat(document.getElementById('retirement-expenses').value) || 0;
     const annualReturn = parseFloat(document.getElementById('retirement-return').value) || 0;
-    const desiredIncome = parseFloat(document.getElementById('retirement-income').value) || 0;
+    const inflationRate = parseFloat(document.getElementById('inflation-rate').value) || 0;
     
-    if (currentAge >= retirementAge || currentSavings < 0 || monthlySavings < 0) {
-        showNotification('Please enter valid retirement details', 'error');
+    // Validate inputs
+    let hasErrors = false;
+    
+    if (currentAge <= 0 || currentAge >= retirementAge) {
+        highlightInvalidField('current-age', 'Current age must be less than retirement age');
+        hasErrors = true;
+    }
+    
+    if (retirementAge <= currentAge || retirementAge >= lifeExpectancy) {
+        highlightInvalidField('retirement-age', 'Retirement age must be between current age and life expectancy');
+        hasErrors = true;
+    }
+    
+    if (lifeExpectancy <= retirementAge) {
+        highlightInvalidField('life-expectancy', 'Life expectancy must be greater than retirement age');
+        hasErrors = true;
+    }
+    
+    if (annualReturn < 0 || annualReturn > 20) {
+        highlightInvalidField('retirement-return', 'Annual return must be between 0% and 20%');
+        hasErrors = true;
+    }
+    
+    if (inflationRate < 0 || inflationRate > 10) {
+        highlightInvalidField('inflation-rate', 'Inflation rate must be between 0% and 10%');
+        hasErrors = true;
+    }
+    
+    if (hasErrors) {
+        showNotification('Please correct the errors in the form', 'error');
         return;
     }
+    
+    // Show loading state
+    const calculateBtn = document.querySelector('#retirement-form button[type="submit"]');
+    const originalBtnText = calculateBtn.innerHTML;
+    calculateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+    calculateBtn.disabled = true;
     
     try {
         const response = await fetch('/api/calculations/retirement-projection', {
@@ -1326,10 +1365,12 @@ async function handleRetirementCalculation(e) {
             body: JSON.stringify({
                 currentAge,
                 retirementAge,
+                lifeExpectancy,
                 currentSavings,
                 monthlySavings,
+                monthlyExpenses,
                 annualReturn,
-                desiredIncome
+                inflationRate
             })
         });
         
@@ -1339,22 +1380,47 @@ async function handleRetirementCalculation(e) {
         
         const result = await response.json();
         
+        // Update dynamic age displays in results
+        document.getElementById('retirement-age-display').textContent = retirementAge;
+        document.getElementById('life-expectancy-display').textContent = lifeExpectancy;
+        
         // Display results
-        document.getElementById('retirement-result-savings').textContent = formatCurrency(result.retirementSavings);
-        document.getElementById('retirement-result-income').textContent = formatCurrency(result.monthlyIncome);
-        document.getElementById('retirement-result-years').textContent = result.yearsOfIncome;
-        document.getElementById('retirement-result-gap').textContent = 
-            result.incomeGap > 0 ? formatCurrency(result.incomeGap) : 'None';
+        document.getElementById('retirement-savings').textContent = formatCurrency(result.retirementSavings);
+        document.getElementById('retirement-monthly-income').textContent = formatCurrency(result.monthlyIncome);
+        document.getElementById('retirement-final-balance').textContent = formatCurrency(result.finalBalance);
+        
+        // Update status indicator
+        const statusIndicator = document.getElementById('retirement-status-indicator');
+        const statusMessage = document.getElementById('retirement-status-message');
+        
+        if (result.isSustainable) {
+            statusIndicator.className = 'status-indicator sustainable';
+            statusMessage.textContent = 'Your retirement plan is sustainable!';
+        } else {
+            statusIndicator.className = 'status-indicator unsustainable';
+            statusMessage.textContent = `Your savings may run out ${result.yearsOfIncome} years into retirement`;
+        }
+        
+        // Update timeline positions
+        updateRetirementTimeline(currentAge, retirementAge, lifeExpectancy);
         
         // Update chart
         updateRetirementChart(result.projectionData);
         
-        // Show results section
-        document.getElementById('retirement-results').classList.remove('hidden');
+        // Show results with animation
+        document.getElementById('retirement-result').classList.remove('hidden');
+        document.getElementById('retirement-chart-container').classList.remove('hidden');
+        
+        // Scroll to results
+        document.getElementById('retirement-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
         
     } catch (error) {
         console.error('Error calculating retirement projection:', error);
         showNotification('Failed to calculate retirement projection', 'error');
+    } finally {
+        // Restore button state
+        calculateBtn.innerHTML = originalBtnText;
+        calculateBtn.disabled = false;
     }
 }
 
@@ -1363,7 +1429,49 @@ async function handleRetirementCalculation(e) {
  * @param {Array} projectionData - Array of yearly projection data
  */
 function updateRetirementChart(projectionData) {
-    if (!charts.retirementProjection) return;
+    if (!charts.retirementProjection) {
+        // Initialize chart if it doesn't exist
+        const ctx = document.getElementById('retirement-chart').getContext('2d');
+        charts.retirementProjection = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Retirement Balance',
+                    data: [],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Balance: $' + context.parsed.y.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
     
     const labels = projectionData.map(data => `Age ${data.age}`);
     const data = projectionData.map(data => data.balance);
@@ -1371,6 +1479,34 @@ function updateRetirementChart(projectionData) {
     charts.retirementProjection.data.labels = labels;
     charts.retirementProjection.data.datasets[0].data = data;
     charts.retirementProjection.update();
+}
+
+/**
+ * Update the retirement timeline visualization
+ * @param {number} currentAge - Current age
+ * @param {number} retirementAge - Retirement age
+ * @param {number} lifeExpectancy - Life expectancy
+ */
+function updateRetirementTimeline(currentAge, retirementAge, lifeExpectancy) {
+    const totalYears = lifeExpectancy - currentAge;
+    const yearsToRetirement = retirementAge - currentAge;
+    const yearsInRetirement = lifeExpectancy - retirementAge;
+    
+    // Calculate percentages for timeline markers
+    const retirementPercent = (yearsToRetirement / totalYears) * 100;
+    
+    // Position the timeline markers
+    document.getElementById('timeline-current-age').style.left = '0%';
+    document.getElementById('timeline-retirement-age').style.left = `${retirementPercent}%`;
+    document.getElementById('timeline-life-expectancy').style.left = '100%';
+    
+    // Add years to labels
+    document.getElementById('timeline-current-age').querySelector('.marker-label').textContent = 
+        `Current (${currentAge})`;
+    document.getElementById('timeline-retirement-age').querySelector('.marker-label').textContent = 
+        `Retirement (${retirementAge})`;
+    document.getElementById('timeline-life-expectancy').querySelector('.marker-label').textContent = 
+        `Life Expectancy (${lifeExpectancy})`;
 }
 
 /**
