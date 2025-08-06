@@ -156,48 +156,8 @@ function setupFormHandlers() {
     // Set up scenario form submission
     document.getElementById('scenario-form').addEventListener('submit', handleScenarioSubmit);
     
-<<<<<<< HEAD
     // Calculator form submissions
     initializeCalculatorForms();
-=======
-    // Set up calculator form submissions
-    const investmentForm = document.getElementById('investment-form');
-    if (investmentForm) {
-        investmentForm.addEventListener('submit', handleInvestmentCalculation);
-        
-        // Set up range slider for investment years
-        const yearsSlider = document.getElementById('investment-years');
-        const yearsValue = document.getElementById('years-value');
-        
-        if (yearsSlider && yearsValue) {
-            // Update the range value display when slider changes
-            yearsSlider.addEventListener('input', function() {
-                yearsValue.textContent = this.value;
-                
-                // Update the background size to show filled track
-                const percent = ((this.value - this.min) / (this.max - this.min)) * 100;
-                this.style.backgroundSize = percent + '% 100%';
-            });
-            
-            // Initialize the background size
-            const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
-            yearsSlider.style.backgroundSize = percent + '% 100%';
-        }
-        
-        // Add reset handler to clear results when form is reset
-        investmentForm.addEventListener('reset', function() {
-            document.getElementById('investment-results').classList.add('hidden');
-            setTimeout(() => {
-                // Reset range slider value display and background
-                if (yearsSlider && yearsValue) {
-                    yearsValue.textContent = yearsSlider.value;
-                    const percent = ((yearsSlider.value - yearsSlider.min) / (yearsSlider.max - yearsSlider.min)) * 100;
-                    yearsSlider.style.backgroundSize = percent + '% 100%';
-                }
-            }, 10);
-        });
-    }
->>>>>>> main
     
     // Set up other calculator form submissions
     const retirementForm = document.getElementById('retirement-form');

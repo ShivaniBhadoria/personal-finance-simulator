@@ -442,7 +442,6 @@ body {
 }
 
 .calculator-result {
-<<<<<<< HEAD
   margin-top: 2rem;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
@@ -497,38 +496,12 @@ body {
 .status-message {
   font-weight: 500;
   flex-grow: 1;
-=======
-  margin-top: 1.5rem;
-  padding: 1.5rem;
-  background-color: #f3f4f6;
-  border-radius: var(--radius);
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.calculator-result.fade-in {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.result-header {
-  margin-top: 0;
-  margin-bottom: 1rem;
-  color: var(--primary-color);
-  font-size: 1.25rem;
-  text-align: center;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.75rem;
->>>>>>> main
 }
 
 .result-item {
   margin-bottom: 1rem;
   display: flex;
   justify-content: space-between;
-<<<<<<< HEAD
   align-items: center;
   padding: 0.5rem 0;
   border-bottom: 1px solid rgba(0,0,0,0.05);
@@ -543,88 +516,6 @@ body {
   font-weight: 700;
   color: var(--primary);
   font-size: 1.1rem;
-=======
-  margin-bottom: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius);
-  transition: background-color 0.3s ease;
-  border-left: 3px solid transparent;
-}
-
-.result-item:hover {
-  background-color: rgba(99, 102, 241, 0.05);
-  border-left-color: var(--primary-color);
-}
-
-.result-value {
-  font-weight: 600;
-  transition: all 0.3s ease;
-  color: var(--primary-color);
-}
-
-/* Result breakdown visualization */
-.result-breakdown {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
-}
-
-.breakdown-item {
-  margin-bottom: 1rem;
-}
-
-.breakdown-label {
-  font-size: 0.875rem;
-  margin-bottom: 0.25rem;
-  color: var(--text-light);
-}
-
-.breakdown-bar-container {
-  height: 1.5rem;
-  background-color: #e5e7eb;
-  border-radius: var(--radius);
-  overflow: hidden;
-  margin-bottom: 0.25rem;
-}
-
-.breakdown-bar {
-  height: 100%;
-  width: 0;
-  transition: width 1s ease-out;
-}
-
-.contributions-bar {
-  background-color: var(--primary-color);
-}
-
-.interest-bar {
-  background-color: var(--secondary-color);
-}
-
-.breakdown-value {
-  text-align: right;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-/* Result highlight animation */
-.highlight-result {
-  animation: highlight 1s ease;
-}
-
-@keyframes highlight {
-  0% {
-    background-color: rgba(99, 102, 241, 0.2);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-/* Hidden class for toggling visibility */
-.hidden {
-  display: none;
->>>>>>> main
 }
 
 .retirement-timeline {
