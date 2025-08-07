@@ -1,4 +1,5 @@
 // Personal Finance Simulator - A tool to simulate financial scenarios and make informed decisions
+// This application helps users plan their financial future through various simulations
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');

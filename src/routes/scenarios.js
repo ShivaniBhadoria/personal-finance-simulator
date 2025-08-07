@@ -1,3 +1,7 @@
+/**
+ * Scenarios Router
+ * Handles all operations related to financial scenarios including CRUD operations
+ */
 const express = require('express');
 const router = express.Router();
 const path = require('path');

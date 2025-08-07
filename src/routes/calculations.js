@@ -1,3 +1,8 @@
+/**
+ * Calculations Router
+ * Handles all financial calculation endpoints including compound interest,
+ * investment growth, retirement projections, debt payoff, and budget analysis
+ */
 const express = require('express');
 const router = express.Router();
 
