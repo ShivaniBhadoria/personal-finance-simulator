@@ -1,0 +1,344 @@
+name: Direct PR Review with MCP
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: true
+        type: number
+
+jobs:
+  review-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          
+      - name: Install dependencies
+        run: npm install @octokit/rest
+        
+      - name: Run PR Review
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const { Octokit } = require('@octokit/rest');
+            
+            // Initialize Octokit with the GitHub token
+            const octokit = new Octokit({
+              auth: process.env.GITHUB_TOKEN
+            });
+            
+            // Get repository and PR information
+            const context = github.context;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            
+            // Determine PR number (from event or input)
+            let prNumber;
+            if (context.payload.pull_request) {
+              prNumber = context.payload.pull_request.number;
+            } else if (context.payload.inputs && context.payload.inputs.pr_number) {
+              prNumber = parseInt(context.payload.inputs.pr_number);
+            } else {
+              core.setFailed('No PR number found');
+              return;
+            }
+            
+            console.log(`Reviewing PR #${prNumber} in ${owner}/${repo}`);
+            
+            // Mock MCP functions to provide the detailed comment format
+            async function reviewPullRequest() {
+              try {
+                // Get PR details
+                const { data: pr } = await octokit.pulls.get({
+                  owner,
+                  repo,
+                  pull_number: prNumber
+                });
+                
+                // Get PR files
+                const { data: files } = await octokit.pulls.listFiles({
+                  owner,
+                  repo,
+                  pull_number: prNumber
+                });
+                
+                // Create a pending review
+                const { data: review } = await octokit.pulls.createReview({
+                  owner,
+                  repo,
+                  pull_number: prNumber
+                });
+                
+                // Track comments to add
+                const comments = [];
+                
+                // Analyze files and prepare comments
+                for (const file of files) {
+                  // Skip deleted files
+                  if (file.status === 'removed') continue;
+                  
+                  // Check file extensions and add appropriate comments
+                  if (file.filename.endsWith('.js') || file.filename.endsWith('.jsx')) {
+                    // JavaScript file analysis
+                    if (file.patch && file.patch.includes('console.log(')) {
+                      comments.push({
+                        path: file.filename,
+                        body: formatDetailedComment({
+                          title: 'Remove console.log statements before production',
+                          severity: 'MINOR',
+                          issue: 'Using console.log() in production code can leak sensitive information and impact performance',
+                          context: 'Console statements are useful for development but should be removed before deploying to production. They can expose sensitive data to browser developer tools and slightly impact runtime performance.',
+                          bestPractice: 'Use a proper logging library with configurable log levels, or ensure console statements are stripped during the build process.',
+                          examples: [
+                            '// Instead of console.log\nimport logger from \'./logger\';\nlogger.debug(\'Debug information\');'
+                          ],
+                          actionItems: [
+                            'Remove or replace console.log statements',
+                            'Consider using a logging library with configurable levels'
+                          ],
+                          tldr: 'Remove console.log statements before merging to production'
+                        }),
+                        line: getLineNumberForPattern(file.patch, 'console.log(')
+                      });
+                    }
+                    
+                    // Add more JavaScript patterns here
+                  } else if (file.filename.endsWith('.css') || file.filename.endsWith('.scss')) {
+                    // CSS file analysis
+                    if (file.patch && file.patch.includes('!important')) {
+                      comments.push({
+                        path: file.filename,
+                        body: formatDetailedComment({
+                          title: 'Avoid using !important in CSS',
+                          severity: 'MINOR',
+                          issue: 'Overuse of !important makes CSS harder to maintain and debug',
+                          context: '!important declarations break the natural cascading of CSS and make future style changes more difficult. They often indicate a specificity problem in your CSS architecture.',
+                          bestPractice: 'Use more specific selectors or restructure your CSS to avoid specificity conflicts.',
+                          examples: [
+                            '/* Instead of this */\n.element {\n  color: red !important;\n}\n\n/* Try this */\n#container .specific-context .element {\n  color: red;\n}'
+                          ],
+                          actionItems: [
+                            'Remove !important declarations where possible',
+                            'Refactor CSS to use more specific selectors'
+                          ],
+                          tldr: 'Avoid !important as it makes CSS harder to maintain'
+                        }),
+                        line: getLineNumberForPattern(file.patch, '!important')
+                      });
+                    }
+                    
+                    // Add more CSS patterns here
+                  }
+                  
+                  // Add general file size comment if file is large
+                  if (file.changes > 300) {
+                    comments.push({
+                      path: file.filename,
+                      body: formatDetailedComment({
+                        title: 'Consider breaking down large files',
+                        severity: 'INFO',
+                        issue: 'This file has significant changes which may impact maintainability',
+                        context: `Large files with many changes (${file.changes} lines modified) can be harder to review, test, and maintain.`,
+                        bestPractice: 'Consider breaking down large files into smaller, more focused modules with single responsibilities.',
+                        examples: [],
+                        actionItems: [
+                          'Consider if functionality can be split into multiple files',
+                          'Ensure proper documentation for complex logic'
+                        ],
+                        tldr: 'Large files can be harder to maintain; consider modularizing'
+                      })
+                    });
+                  }
+                }
+                
+                // Generate PR stats
+                const stats = await generatePRStats(pr, files);
+                
+                // Submit review with comments
+                if (comments.length > 0) {
+                  // Add each comment to the review
+                  for (const comment of comments) {
+                    await octokit.pulls.createReviewComment({
+                      owner,
+                      repo,
+                      pull_number: prNumber,
+                      commit_id: pr.head.sha,
+                      path: comment.path,
+                      body: comment.body,
+                      line: comment.line || 1,
+                      side: 'RIGHT'
+                    });
+                  }
+                  
+                  // Submit the review with a summary
+                  await octokit.pulls.submitReview({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    review_id: review.id,
+                    event: 'COMMENT',
+                    body: `# PR Review Summary\n\n${stats}\n\nFound ${comments.length} items to address in this PR.`
+                  });
+                } else {
+                  // Submit an approval if no issues found
+                  await octokit.pulls.submitReview({
+                    owner,
+                    repo,
+                    pull_number: prNumber,
+                    review_id: review.id,
+                    event: 'APPROVE',
+                    body: `# PR Review Summary\n\n${stats}\n\nNo issues found in this PR. Great job!`
+                  });
+                }
+                
+                console.log(`Review completed for PR #${prNumber}`);
+                return { success: true, commentCount: comments.length };
+              } catch (error) {
+                console.error('Error reviewing PR:', error);
+                throw error;
+              }
+            }
+            
+            // Helper function to format detailed comments
+            function formatDetailedComment({ title, severity, issue, context, bestPractice, examples = [], actionItems = [], tldr }) {
+              let comment = '';
+              
+              // Add title with severity badge
+              if (title) {
+                const severityBadge = getSeverityBadge(severity);
+                comment += `## ${title} ${severityBadge}\n\n`;
+              }
+              
+              // Add issue description
+              if (issue) {
+                comment += `**Issue:** ${issue}\n\n`;
+              }
+              
+              // Add context
+              if (context) {
+                comment += `**Context:** ${context}\n\n`;
+              }
+              
+              // Add best practice
+              if (bestPractice) {
+                comment += `**Best Practice:** ${bestPractice}\n\n`;
+              }
+              
+              // Add code examples
+              if (examples && examples.length > 0) {
+                comment += `**Examples:**\n\n`;
+                
+                examples.forEach((example, index) => {
+                  comment += `\`\`\`javascript\n${example}\n\`\`\`\n\n`;
+                });
+              }
+              
+              // Add action items
+              if (actionItems && actionItems.length > 0) {
+                comment += `**Action Items:**\n`;
+                actionItems.forEach(item => {
+                  comment += `- ${item}\n`;
+                });
+                comment += '\n';
+              }
+              
+              // Add TLDR for longer comments
+              if (tldr && (comment.length > 500 || comment.split('\n').length > 10)) {
+                comment += `**TLDR:** ${tldr}`;
+              }
+              
+              return comment.trim();
+            }
+            
+            // Helper function to get severity badge
+            function getSeverityBadge(severity) {
+              const badges = {
+                'BLOCKER': '🛑',
+                'CRITICAL': '❌',
+                'MAJOR': '⚠️',
+                'MINOR': '⚠️',
+                'INFO': 'ℹ️'
+              };
+              
+              return badges[severity] || 'ℹ️';
+            }
+            
+            // Helper function to get line number from patch
+            function getLineNumberForPattern(patch, pattern) {
+              if (!patch) return 1;
+              
+              const lines = patch.split('\n');
+              let lineNumber = 0;
+              
+              for (const line of lines) {
+                if (line.startsWith('+')) {
+                  lineNumber++;
+                  if (line.includes(pattern)) {
+                    return lineNumber;
+                  }
+                } else if (line.startsWith(' ')) {
+                  lineNumber++;
+                }
+              }
+              
+              return 1; // Default to line 1 if pattern not found
+            }
+            
+            // Generate PR statistics
+            async function generatePRStats(pr, files) {
+              // Get PR author details
+              const { data: author } = await octokit.users.getByUsername({
+                username: pr.user.login
+              });
+              
+              // Calculate file type statistics
+              const fileTypes = {};
+              let totalAdditions = 0;
+              let totalDeletions = 0;
+              
+              files.forEach(file => {
+                const extension = file.filename.split('.').pop() || 'unknown';
+                fileTypes[extension] = (fileTypes[extension] || 0) + 1;
+                totalAdditions += file.additions;
+                totalDeletions += file.deletions;
+              });
+              
+              // Format the statistics
+              let stats = '## PR Statistics\n\n';
+              stats += `**Author:** ${pr.user.login}\n`;
+              stats += `**Title:** ${pr.title}\n`;
+              stats += `**Created:** ${new Date(pr.created_at).toLocaleString()}\n\n`;
+              
+              stats += '### Changes\n\n';
+              stats += `- **Files changed:** ${files.length}\n`;
+              stats += `- **Additions:** ${totalAdditions}\n`;
+              stats += `- **Deletions:** ${totalDeletions}\n`;
+              stats += `- **Net change:** ${totalAdditions - totalDeletions}\n\n`;
+              
+              stats += '### File Types\n\n';
+              Object.entries(fileTypes).forEach(([type, count]) => {
+                stats += `- **${type}:** ${count}\n`;
+              });
+              
+              return stats;
+            }
+            
+            // Run the PR review
+            return await reviewPullRequest();
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+permissions:
+  contents: read
+  pull-requests: write
