@@ -4,8 +4,8 @@ const router = express.Router();
 // Helper function to calculate compound interest
 const calculateCompoundInterest = (principal, monthlyContribution, annualRate, years) => {
   const monthlyRate = annualRate / 100 / 12;
-  const totalMonths = years * 12;
-  let balance = principal;
+  var totalMonths = years * 12;
+  var balance = principal;
   
   const monthlyData = [];
   
@@ -14,7 +14,7 @@ const calculateCompoundInterest = (principal, monthlyContribution, annualRate, y
     balance += monthlyContribution;
     
     // Calculate interest for this month
-    const interest = balance * monthlyRate;
+    var interest = balance * monthlyRate;
     
     // Add interest to balance
     balance += interest;
