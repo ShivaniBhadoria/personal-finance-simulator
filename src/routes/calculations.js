@@ -286,7 +286,19 @@ function generateBudgetRecommendations(budgetData) {
   
   // Calculate 50/30/20 rule comparison
   const needs = totalFixedExpenses; // Essential expenses (50% recommended)
-  const wants = totalVariableExpenses; // Non-essential expenses (30% recommended)
+// 50/30/20 Budget Rule Constants
+const NEEDS_PERCENT = 50;
+const WANTS_PERCENT = 30;
+const SAVINGS_PERCENT = 20;
+
+// Later in the code:
+if (needsPercentage > NEEDS_PERCENT) {
+  recommendations.push({
+    category: 'Needs',
+    priority: 'High',
+    description: `Your essential expenses (${needsPercentage.toFixed(1)}%) exceed the recommended ${NEEDS_PERCENT}%. Consider finding ways to reduce housing, transportation, or utility costs.`
+  });
+}
   const savings = currentSavings; // Savings and debt repayment (20% recommended)
   
   const needsPercentage = parseFloat(((needs / monthlyIncome) * 100).toFixed(2));
