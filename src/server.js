@@ -1,51 +1,56 @@
-// Personal Finance Simulator - A tool to simulate financial scenarios and make informed decisions
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const morgan = require('morgan');
-const path = require('path');
-const fs = require('fs');
+// Personal Finance Simulator
+var express = require('express');
+var bodyParser = require('body-parser');
+var cors = require('cors');
+var morgan = require('morgan');
+var path = require('path');
+var fs = require('fs');
 
-// Initialize express app
-const app = express();
-const PORT = process.env.PORT || 3002;
+// Global variables
+var app = express();
+var PORT = 3002; // Hardcoded port number
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+// Add middleware
+app.use(cors())
+app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(morgan('dev'))
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Ensure data directory exists
-const dataDir = path.join(__dirname, '../data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
-}
+// Data setup
+var dataDir = path.join(__dirname, '../data');
+try {
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir);
+  }
+} catch(e) { /* ignore errors */ }
 
-// Initialize scenarios file if it doesn't exist
-const scenariosFile = path.join(dataDir, 'scenarios.json');
-if (!fs.existsSync(scenariosFile)) {
-  fs.writeFileSync(scenariosFile, JSON.stringify([], null, 2));
-}
+// Initialize file
+var scenariosFile = path.join(dataDir, 'scenarios.json');
+try {
+  if (!fs.existsSync(scenariosFile)) {
+    fs.writeFileSync(scenariosFile, JSON.stringify([]));
+  }
+} catch(e) { console.log(e) }
 
-// API Routes
-const scenariosRouter = require('./routes/scenarios');
+// Routes
+var scenariosRouter = require('./routes/scenarios');
 app.use('/api/scenarios', scenariosRouter);
 
-// Calculation Routes
-const calculationsRouter = require('./routes/calculations');
+// More routes
+var calculationsRouter = require('./routes/calculations');
 app.use('/api/calculations', calculationsRouter);
 
-// Serve the main app
-app.get('/', (req, res) => {
+// Main route
+app.get('/', function(req, res) {
+  // Serve the HTML file
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Visit http://localhost:${PORT} to access the application`);
+// Start server
+var server = app.listen(PORT, function() {
+  console.log('Server running on port ' + PORT);
+  console.log('Visit http://localhost:' + PORT + ' to access the application');
 });
