@@ -268,7 +268,16 @@ router.post('/budget-analysis', (req, res) => {
     percentage: parseFloat(((amount / monthlyIncome) * 100).toFixed(2))
   }));
 
-  // Sort expense percentages by amount (descending)
+/**
+ * Generates personalized budget recommendations based on 50/30/20 rule analysis
+ * @param {Object} budgetData - The user's budget data
+ * @param {number} budgetData.totalIncome - Total monthly income
+ * @param {number} budgetData.totalExpenses - Total monthly expenses
+ * @param {Array} budgetData.expenseBreakdown - Breakdown of expenses by category
+ * @param {number} budgetData.savingsGoal - User's monthly savings goal
+ * @return {Array} Array of recommendation objects with category, priority, and description
+ */
+function generateBudgetRecommendations(budgetData) {
   expensePercentages.sort((a, b) => b.amount - a.amount);
   
   // Calculate fixed vs variable expense ratio
