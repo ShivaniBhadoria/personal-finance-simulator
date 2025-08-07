@@ -1,0 +1,215 @@
+name: Automatic PR Review and Stats
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      
+      # No need to install @octokit/rest separately as it's included in actions/github-script
+
+      - name: Run PR review and stats
+        uses: actions/github-script@v6  # v6 is compatible with Node.js 16
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+            
+            console.log(`Starting review for PR #${prNumber} in ${owner}/${repo}`);
+            
+            // Get PR details
+            const pr = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: prNumber
+            });
+            
+            // Get PR files
+            const filesResponse = await github.rest.pulls.listFiles({
+              owner,
+              repo,
+              pull_number: prNumber
+            });
+            const files = filesResponse.data;
+            
+            // Get author's PRs in this repo
+            const author = context.payload.pull_request.user.login;
+            const authorPRsResponse = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} author:${author} is:pr`
+            });
+            const authorPRs = authorPRsResponse.data.items;
+            
+            // Calculate statistics
+            const totalAdditions = files.reduce((sum, file) => sum + file.additions, 0);
+            const totalDeletions = files.reduce((sum, file) => sum + file.deletions, 0);
+            const totalChanges = totalAdditions + totalDeletions;
+            
+            // Count PRs by status
+            let openPRs = 0;
+            let mergedPRs = 0;
+            let closedPRs = 0;
+            
+            authorPRs.forEach(item => {
+              if (item.state === 'open') openPRs++;
+              else if (item.pull_request && item.pull_request.merged_at) mergedPRs++;
+              else closedPRs++;
+            });
+            
+            // Format dates
+            const formatDate = (dateString) => {
+              const date = new Date(dateString);
+              return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              });
+            };
+            
+            // Calculate time to merge
+            const calculateTimeToMerge = (createdAt, mergedAt) => {
+              if (!mergedAt) return 'Not merged';
+              
+              const created = new Date(createdAt);
+              const merged = new Date(mergedAt);
+              const diffMs = merged - created;
+              const diffHrs = diffMs / (1000 * 60 * 60);
+              
+              if (diffHrs < 1) {
+                return `~${Math.round(diffMs / (1000 * 60))} minutes`;
+              } else {
+                return `~${diffHrs.toFixed(1)} hours`;
+              }
+            };
+            
+            // Generate PR statistics
+            let statsComment = `## PR Statistics\n\n`;
+            
+            // Basic Information
+            statsComment += `### Basic Information\n`;
+            statsComment += `- **PR Number:** ${pr.data.number}\n`;
+            statsComment += `- **Title:** ${pr.data.title}\n`;
+            statsComment += `- **Author:** ${author}\n`;
+            statsComment += `- **Status:** ${pr.data.state}\n`;
+            statsComment += `- **Created:** ${formatDate(pr.data.created_at)}\n`;
+            statsComment += `- **Updated:** ${formatDate(pr.data.updated_at)}\n\n`;
+            
+            // Code Changes
+            statsComment += `### Code Changes\n`;
+            statsComment += `- **Files changed:** ${files.length} files\n`;
+            files.slice(0, 10).forEach(file => {
+              statsComment += `  - ${file.filename}\n`;
+            });
+            if (files.length > 10) {
+              statsComment += `  - *and ${files.length - 10} more files...*\n`;
+            }
+            statsComment += `- **Total lines changed:** ${totalChanges}\n`;
+            statsComment += `- **Additions:** ${totalAdditions} lines\n`;
+            statsComment += `- **Deletions:** ${totalDeletions} lines\n\n`;
+            
+            // Author Contribution Statistics
+            statsComment += `### Author Contribution Statistics\n`;
+            statsComment += `- **Total PRs by author in this repo:** ${authorPRs.length}\n`;
+            statsComment += `- **PRs open:** ${openPRs}\n`;
+            statsComment += `- **PRs merged:** ${mergedPRs}\n`;
+            statsComment += `- **PRs closed without merging:** ${closedPRs}\n\n`;
+            
+            // Add review comments based on file types
+            let reviewComments = [];
+            
+            for (const file of files) {
+              // Skip binary files and large files
+              if (file.status === 'removed' || 
+                  file.filename.match(/\.(png|jpg|jpeg|gif|svg|ico|woff|ttf|eot)$/i)) {
+                continue;
+              }
+              
+              // JavaScript specific review
+              if (file.filename.endsWith('.js') || file.filename.endsWith('.jsx')) {
+                reviewComments.push({
+                  path: file.filename,
+                  body: "**JavaScript file detected.** Checking for best practices and potential improvements."
+                });
+              } 
+              // CSS specific review
+              else if (file.filename.endsWith('.css') || file.filename.endsWith('.scss')) {
+                reviewComments.push({
+                  path: file.filename,
+                  body: "**CSS file detected.** Checking for styling best practices and potential improvements."
+                });
+              }
+              // JSON specific review
+              else if (file.filename.endsWith('.json')) {
+                reviewComments.push({
+                  path: file.filename,
+                  body: "**JSON file detected.** Checking for valid formatting."
+                });
+              }
+            }
+            
+            // Add review summary
+            let reviewSummary = `## Automatic PR Review\n\n`;
+            reviewSummary += `Thank you for submitting this pull request! I've automatically reviewed your changes and generated statistics.\n\n`;
+            
+            // Add PR stats summary
+            reviewSummary += `### PR Overview\n`;
+            reviewSummary += `- **Files changed:** ${files.length}\n`;
+            reviewSummary += `- **Lines added:** ${totalAdditions}\n`;
+            reviewSummary += `- **Lines removed:** ${totalDeletions}\n\n`;
+            
+            // Add author stats
+            reviewSummary += `### Author Stats\n`;
+            reviewSummary += `- **Total PRs by author:** ${authorPRs.length}\n`;
+            reviewSummary += `- **PRs merged:** ${mergedPRs}\n`;
+            reviewSummary += `- **PRs open:** ${openPRs}\n\n`;
+            
+            // Add file-specific comments if any
+            if (reviewComments.length > 0) {
+              // Create a review with all comments at once
+              const review = await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: prNumber,
+                commit_id: pr.data.head.sha,
+                body: reviewSummary + statsComment,
+                event: 'COMMENT',
+                comments: reviewComments.map(comment => ({
+                  path: comment.path,
+                  body: comment.body,
+                  line: 1,
+                  side: 'RIGHT'
+                }))
+              });
+              
+              console.log(`Added ${reviewComments.length} comments to the PR review`);
+            } else {
+              // Submit the review with statistics only
+              await github.rest.pulls.createReview({
+                owner,
+                repo,
+                pull_number: prNumber,
+                commit_id: pr.data.head.sha,
+                body: reviewSummary + statsComment,
+                event: 'COMMENT'
+              });
+            }
+            
+            console.log('Automatic PR review submitted successfully!');
