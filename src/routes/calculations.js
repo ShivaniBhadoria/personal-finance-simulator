@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
+//adding a random comment to check defects
 // Helper function to calculate compound interest
 const calculateCompoundInterest = (principal, monthlyContribution, annualRate, years) => {
   const monthlyRate = annualRate / 100 / 12;
