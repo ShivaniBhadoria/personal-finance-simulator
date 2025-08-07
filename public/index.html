@@ -359,84 +359,36 @@
             </div>
             <div class="card-body">
               <form id="debt-form" class="calculator-form">
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="debt-amount">
-                      Debt Amount ($)
-                      <span class="form-tooltip">
-                        <i class="fas fa-info-circle"></i>
-                        <span class="tooltip-text">The total amount of debt you want to pay off</span>
-                      </span>
-                    </label>
-                    <input type="number" id="debt-amount" min="0" step="100" value="10000" placeholder="e.g., 10000">
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="debt-interest">
-                      Interest Rate (%)
-                      <span class="form-tooltip">
-                        <i class="fas fa-info-circle"></i>
-                        <span class="tooltip-text">Annual interest rate on your debt</span>
-                      </span>
-                    </label>
-                    <input type="number" id="debt-interest" min="0" max="30" step="0.1" value="5" placeholder="e.g., 5">
-                  </div>
-                </div>
-                
-                <div class="form-row">
-                  <div class="form-group col-md-6">
-                    <label for="debt-payment">
-                      Monthly Payment ($)
-                      <span class="form-tooltip">
-                        <i class="fas fa-info-circle"></i>
-                        <span class="tooltip-text">How much you plan to pay each month</span>
-                      </span>
-                    </label>
-                    <input type="number" id="debt-payment" min="0" step="50" value="200" placeholder="e.g., 200">
-                  </div>
-                  <div class="form-group col-md-6">
-                    <label for="debt-extra-payment">
-                      Extra Monthly Payment ($)
-                      <span class="form-tooltip">
-                        <i class="fas fa-info-circle"></i>
-                        <span class="tooltip-text">Additional amount you can pay each month to reduce debt faster</span>
-                      </span>
-                    </label>
-                    <input type="number" id="debt-extra-payment" min="0" step="10" value="0" placeholder="e.g., 50">
-                  </div>
-                </div>
-                
                 <div class="form-group">
-                  <label for="debt-lump-sum">
-                    One-time Payment ($)
+                  <label for="debt-amount">
+                    Debt Amount ($)
                     <span class="form-tooltip">
                       <i class="fas fa-info-circle"></i>
-                      <span class="tooltip-text">Optional one-time lump sum payment to reduce principal</span>
+                      <span class="tooltip-text">The total amount of debt you want to pay off</span>
                     </span>
                   </label>
-                  <div class="input-group">
-                    <input type="number" id="debt-lump-sum" min="0" step="100" value="0" placeholder="e.g., 1000">
-                    <div class="input-group-append">
-                      <select id="debt-lump-month" class="form-control">
-                        <option value="1">Apply in month 1</option>
-                        <option value="3">Apply in month 3</option>
-                        <option value="6">Apply in month 6</option>
-                        <option value="12">Apply in month 12</option>
-                      </select>
-                    </div>
-                  </div>
+                  <input type="number" id="debt-amount" min="0" step="100" value="10000" placeholder="e.g., 10000">
                 </div>
-                
-                <div class="payment-strategy-toggle">
-                  <label class="toggle-label">
-                    <input type="checkbox" id="debt-avalanche-toggle">
-                    <span class="toggle-text">Use debt avalanche strategy</span>
+                <div class="form-group">
+                  <label for="debt-interest">
+                    Interest Rate (%)
                     <span class="form-tooltip">
                       <i class="fas fa-info-circle"></i>
-                      <span class="tooltip-text">Prioritizes paying off high-interest debt first, which saves more money in the long run</span>
+                      <span class="tooltip-text">Annual interest rate on your debt</span>
                     </span>
                   </label>
+                  <input type="number" id="debt-interest" min="0" max="30" step="0.1" value="5" placeholder="e.g., 5">
                 </div>
-                
+                <div class="form-group">
+                  <label for="debt-payment">
+                    Monthly Payment ($)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">How much you plan to pay each month</span>
+                    </span>
+                  </label>
+                  <input type="number" id="debt-payment" min="0" step="50" value="200" placeholder="e.g., 200">
+                </div>
                 <div class="form-actions">
                   <button type="reset" class="btn btn-secondary">Reset</button>
                   <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Calculate</button>
