@@ -426,60 +426,295 @@
             <div class="card-body">
               <form id="budget-form" class="calculator-form">
                 <div class="form-group">
-                  <label for="monthly-income">Monthly Income ($)</label>
+                  <label for="monthly-income">
+                    Monthly Income ($)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">Your total monthly income after taxes</span>
+                    </span>
+                  </label>
                   <input type="number" id="monthly-income" min="0" step="100" value="5000">
                 </div>
                 <div class="form-group">
-                  <label for="savings-goal">Savings Goal (%)</label>
+                  <label for="savings-goal">
+                    Savings Goal (%)
+                    <span class="form-tooltip">
+                      <i class="fas fa-info-circle"></i>
+                      <span class="tooltip-text">Percentage of income you aim to save each month</span>
+                    </span>
+                  </label>
                   <input type="number" id="savings-goal" min="0" max="100" step="1" value="20">
                 </div>
-                <div id="expense-inputs">
-                  <div class="expense-input">
-                    <div class="form-group">
-                      <label>Expense Category</label>
-                      <select class="expense-category">
-                        <option value="Housing">Housing</option>
-                        <option value="Transportation">Transportation</option>
-                        <option value="Food">Food</option>
-                        <option value="Utilities">Utilities</option>
-                        <option value="Insurance">Insurance</option>
-                        <option value="Healthcare">Healthcare</option>
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Other">Other</option>
-                      </select>
+                
+                <div class="form-tabs">
+                  <div class="tab-header">
+                    <button type="button" class="tab-btn active" data-tab="expenses">Expenses</button>
+                    <button type="button" class="tab-btn" data-tab="fixed-variable">Fixed/Variable</button>
+                    <button type="button" class="tab-btn" data-tab="goals">Financial Goals</button>
+                  </div>
+                  
+                  <div class="tab-content active" id="expenses-tab">
+                    <h4>All Expenses</h4>
+                    <div id="expense-inputs">
+                      <div class="expense-input">
+                        <div class="form-group">
+                          <label>Expense Category</label>
+                          <select class="expense-category">
+                            <option value="Housing">Housing</option>
+                            <option value="Transportation">Transportation</option>
+                            <option value="Food">Food</option>
+                            <option value="Utilities">Utilities</option>
+                            <option value="Insurance">Insurance</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Entertainment">Entertainment</option>
+                            <option value="Debt Payments">Debt Payments</option>
+                            <option value="Subscriptions">Subscriptions</option>
+                            <option value="Education">Education</option>
+                            <option value="Personal Care">Personal Care</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label>Amount ($)</label>
+                          <input type="number" class="expense-amount" min="0" step="10" value="1000">
+                        </div>
+                        <button type="button" class="btn btn-icon remove-expense"><i class="fas fa-times"></i></button>
+                      </div>
                     </div>
-                    <div class="form-group">
-                      <label>Amount ($)</label>
-                      <input type="number" class="expense-amount" min="0" step="10" value="1000">
+                    <button type="button" id="add-expense" class="btn btn-secondary">
+                      <i class="fas fa-plus"></i> Add Expense
+                    </button>
+                  </div>
+                  
+                  <div class="tab-content" id="fixed-variable-tab">
+                    <div class="tab-section">
+                      <h4>Fixed Expenses (Needs)</h4>
+                      <p class="tab-description">Essential expenses that remain relatively constant each month</p>
+                      <div id="fixed-expense-inputs">
+                        <div class="expense-input fixed-expense">
+                          <div class="form-group">
+                            <label>Expense Category</label>
+                            <select class="expense-category">
+                              <option value="Housing">Housing</option>
+                              <option value="Utilities">Utilities</option>
+                              <option value="Insurance">Insurance</option>
+                              <option value="Debt Payments">Debt Payments</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label>Amount ($)</label>
+                            <input type="number" class="expense-amount" min="0" step="10" value="1500">
+                          </div>
+                          <button type="button" class="btn btn-icon remove-expense"><i class="fas fa-times"></i></button>
+                        </div>
+                      </div>
+                      <button type="button" id="add-fixed-expense" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Add Fixed Expense
+                      </button>
                     </div>
-                    <button type="button" class="btn btn-icon remove-expense"><i class="fas fa-times"></i></button>
+                    
+                    <div class="tab-section">
+                      <h4>Variable Expenses (Wants)</h4>
+                      <p class="tab-description">Discretionary expenses that may vary month to month</p>
+                      <div id="variable-expense-inputs">
+                        <div class="expense-input variable-expense">
+                          <div class="form-group">
+                            <label>Expense Category</label>
+                            <select class="expense-category">
+                              <option value="Food">Food</option>
+                              <option value="Entertainment">Entertainment</option>
+                              <option value="Shopping">Shopping</option>
+                              <option value="Personal Care">Personal Care</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label>Amount ($)</label>
+                            <input type="number" class="expense-amount" min="0" step="10" value="500">
+                          </div>
+                          <button type="button" class="btn btn-icon remove-expense"><i class="fas fa-times"></i></button>
+                        </div>
+                      </div>
+                      <button type="button" id="add-variable-expense" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Add Variable Expense
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div class="tab-content" id="goals-tab">
+                    <h4>Financial Goals</h4>
+                    <p class="tab-description">Track progress toward your financial goals</p>
+                    <div id="financial-goal-inputs">
+                      <div class="financial-goal-input">
+                        <div class="form-group">
+                          <label>Goal Name</label>
+                          <input type="text" class="goal-name" value="Emergency Fund">
+                        </div>
+                        <div class="form-group">
+                          <label>Target Amount ($)</label>
+                          <input type="number" class="goal-target" min="0" step="100" value="10000">
+                        </div>
+                        <div class="form-group">
+                          <label>Current Amount ($)</label>
+                          <input type="number" class="goal-current" min="0" step="100" value="2000">
+                        </div>
+                        <div class="form-group">
+                          <label>Allocation (%)</label>
+                          <input type="number" class="goal-allocation" min="0" max="100" step="1" value="50">
+                        </div>
+                        <button type="button" class="btn btn-icon remove-goal"><i class="fas fa-times"></i></button>
+                      </div>
+                    </div>
+                    <button type="button" id="add-financial-goal" class="btn btn-secondary">
+                      <i class="fas fa-plus"></i> Add Financial Goal
+                    </button>
                   </div>
                 </div>
-                <button type="button" id="add-expense" class="btn btn-secondary">
-                  <i class="fas fa-plus"></i> Add Expense
-                </button>
-                <button type="submit" class="btn btn-primary">Calculate</button>
+                
+                <div class="form-actions">
+                  <button type="reset" class="btn btn-secondary">Reset</button>
+                  <button type="submit" class="btn btn-primary"><i class="fas fa-calculator"></i> Calculate</button>
+                </div>
               </form>
-              <div class="calculator-result" id="budget-result">
-                <div class="result-item">
-                  <span class="result-label">Total Expenses:</span>
-                  <span class="result-value" id="budget-total-expenses">$0</span>
+              
+              <div class="calculator-result hidden" id="budget-result">
+                <h4 class="result-header">Budget Analysis Results</h4>
+                
+                <div class="result-tabs">
+                  <div class="tab-header">
+                    <button type="button" class="tab-btn active" data-result-tab="summary">Summary</button>
+                    <button type="button" class="tab-btn" data-result-tab="distribution">Distribution</button>
+                    <button type="button" class="tab-btn" data-result-tab="health">Budget Health</button>
+                    <button type="button" class="tab-btn" data-result-tab="goals">Goals</button>
+                    <button type="button" class="tab-btn" data-result-tab="recommendations">Recommendations</button>
+                  </div>
+                  
+                  <div class="result-tab-content active" id="summary-tab">
+                    <div class="result-summary">
+                      <div class="result-item">
+                        <span class="result-label">Monthly Income:</span>
+                        <span class="result-value" id="budget-income">$0</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="result-label">Total Expenses:</span>
+                        <span class="result-value" id="budget-total-expenses">$0</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="result-label">Current Savings:</span>
+                        <span class="result-value" id="budget-current-savings">$0</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="result-label">Savings Rate:</span>
+                        <span class="result-value" id="budget-savings-rate">0%</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="result-label">Savings Goal:</span>
+                        <span class="result-value" id="budget-savings-goal">$0</span>
+                      </div>
+                      <div class="result-item">
+                        <span class="result-label">Gap to Goal:</span>
+                        <span class="result-value" id="budget-savings-gap">$0</span>
+                      </div>
+                      <div class="result-status" id="budget-goal-status">
+                        <div class="status-indicator" id="budget-goal-indicator"></div>
+                        <div class="status-message" id="budget-goal-message">Not meeting savings goal</div>
+                      </div>
+                    </div>
+                    <div class="calculator-chart-container">
+                      <canvas id="budget-chart"></canvas>
+                    </div>
+                  </div>
+                  
+                  <div class="result-tab-content" id="distribution-tab">
+                    <div class="budget-rule">
+                      <h5>50/30/20 Rule Analysis</h5>
+                      <p>Compare your budget to the recommended 50/30/20 rule: 50% for needs, 30% for wants, and 20% for savings.</p>
+                      
+                      <div class="budget-rule-comparison">
+                        <div class="rule-category">
+                          <div class="rule-label">Needs (Fixed)</div>
+                          <div class="rule-bar-container">
+                            <div class="rule-bar needs-bar" id="needs-percentage-bar"></div>
+                            <div class="rule-recommended" style="left: 50%;">50%</div>
+                          </div>
+                          <div class="rule-values">
+                            <span id="needs-percentage">0%</span>
+                            <span id="needs-amount">$0</span>
+                          </div>
+                        </div>
+                        
+                        <div class="rule-category">
+                          <div class="rule-label">Wants (Variable)</div>
+                          <div class="rule-bar-container">
+                            <div class="rule-bar wants-bar" id="wants-percentage-bar"></div>
+                            <div class="rule-recommended" style="left: 30%;">30%</div>
+                          </div>
+                          <div class="rule-values">
+                            <span id="wants-percentage">0%</span>
+                            <span id="wants-amount">$0</span>
+                          </div>
+                        </div>
+                        
+                        <div class="rule-category">
+                          <div class="rule-label">Savings</div>
+                          <div class="rule-bar-container">
+                            <div class="rule-bar savings-bar" id="savings-percentage-bar"></div>
+                            <div class="rule-recommended" style="left: 20%;">20%</div>
+                          </div>
+                          <div class="rule-values">
+                            <span id="savings-percentage">0%</span>
+                            <span id="savings-amount">$0</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="calculator-chart-container">
+                      <canvas id="budget-distribution-chart"></canvas>
+                    </div>
+                  </div>
+                  
+                  <div class="result-tab-content" id="health-tab">
+                    <div class="budget-health">
+                      <div class="health-score-container">
+                        <div class="health-score" id="budget-health-score">0</div>
+                        <div class="health-label">Budget Health Score</div>
+                      </div>
+                      
+                      <div class="health-status">
+                        <div class="health-status-label">Status:</div>
+                        <div class="health-status-value" id="budget-health-status">Calculating...</div>
+                      </div>
+                      
+                      <div class="health-description" id="budget-health-description">
+                        Your budget health is being calculated...
+                      </div>
+                      
+                      <div class="health-meter">
+                        <div class="meter-segment critical">Critical</div>
+                        <div class="meter-segment poor">Poor</div>
+                        <div class="meter-segment fair">Fair</div>
+                        <div class="meter-segment good">Good</div>
+                        <div class="meter-segment excellent">Excellent</div>
+                        <div class="meter-pointer" id="health-meter-pointer"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="result-tab-content" id="goals-tab">
+                    <div id="financial-goals-results">
+                      <p class="no-goals-message">No financial goals have been set.</p>
+                      <!-- Goals will be populated here -->
+                    </div>
+                  </div>
+                  
+                  <div class="result-tab-content" id="recommendations-tab">
+                    <div class="recommendations-list" id="budget-recommendations">
+                      <!-- Recommendations will be populated here -->
+                    </div>
+                  </div>
                 </div>
-                <div class="result-item">
-                  <span class="result-label">Current Savings:</span>
-                  <span class="result-value" id="budget-current-savings">$0</span>
-                </div>
-                <div class="result-item">
-                  <span class="result-label">Savings Rate:</span>
-                  <span class="result-value" id="budget-savings-rate">0%</span>
-                </div>
-                <div class="result-item">
-                  <span class="result-label">Meeting Savings Goal:</span>
-                  <span class="result-value" id="budget-goal-met">No</span>
-                </div>
-              </div>
-              <div class="calculator-chart-container">
-                <canvas id="budget-chart"></canvas>
               </div>
             </div>
           </div>

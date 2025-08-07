@@ -25,6 +25,20 @@ let scenarios = [];
 let currentScenarioId = null;
 let charts = {};
 
+// Define chart colors for consistent styling
+const chartColors = [
+    'rgba(54, 162, 235, 0.7)',   // Blue
+    'rgba(255, 159, 64, 0.7)',   // Orange
+    'rgba(75, 192, 192, 0.7)',   // Green
+    'rgba(255, 99, 132, 0.7)',   // Red
+    'rgba(153, 102, 255, 0.7)',  // Purple
+    'rgba(255, 205, 86, 0.7)',   // Yellow
+    'rgba(201, 203, 207, 0.7)',  // Grey
+    'rgba(255, 99, 71, 0.7)',    // Tomato
+    'rgba(50, 205, 50, 0.7)',    // Lime Green
+    'rgba(138, 43, 226, 0.7)'    // Blue Violet
+];
+
 /**
  * Initialize navigation between different views
  */
@@ -190,20 +204,168 @@ function setupFormHandlers() {
  */
 function initializeCalculatorForms() {
     // Set up form event listeners
-    document.getElementById('investment-form').addEventListener('submit', handleInvestmentCalculation);
-    document.getElementById('retirement-form').addEventListener('submit', handleRetirementCalculation);
-    document.getElementById('debt-form').addEventListener('submit', handleDebtCalculation);
-    document.getElementById('budget-form').addEventListener('submit', handleBudgetCalculation);
+    document.getElementById('compound-interest-form')?.addEventListener('submit', handleCompoundInterestCalculation);
+    document.getElementById('retirement-form')?.addEventListener('submit', handleRetirementCalculation);
+    document.getElementById('debt-payoff-form')?.addEventListener('submit', handleDebtPayoffCalculation);
+    document.getElementById('budget-form')?.addEventListener('submit', handleBudgetCalculation);
+
+    // Event listeners for budget form tabs
+    const tabButtons = document.querySelectorAll('.tab-btn[data-tab]');
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabId = button.getAttribute('data-tab');
+            
+            // Update active tab button
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Show selected tab content
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+    });
+
+    // Event listeners for budget result tabs
+    const resultTabButtons = document.querySelectorAll('.tab-btn[data-result-tab]');
+    resultTabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const tabId = button.getAttribute('data-result-tab');
+            
+            // Update active tab button
+            resultTabButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // Show selected tab content
+            const tabContents = document.querySelectorAll('.result-tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+            document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+    });
+
+    // Event listeners for adding/removing expense items
+    document.getElementById('add-expense')?.addEventListener('click', () => addExpenseInput('expense-inputs'));
+    document.getElementById('add-fixed-expense')?.addEventListener('click', () => addExpenseInput('fixed-expense-inputs', 'fixed-expense'));
+    document.getElementById('add-variable-expense')?.addEventListener('click', () => addExpenseInput('variable-expense-inputs', 'variable-expense'));
+    document.getElementById('add-financial-goal')?.addEventListener('click', addFinancialGoalInput);
+
+    // Delegate event listeners for removing expense items
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.remove-expense')) {
+            e.target.closest('.expense-input').remove();
+        }
+        if (e.target.closest('.remove-goal')) {
+            e.target.closest('.financial-goal-input').remove();
+        }
+    });
+    
+    // Helper functions for budget analysis form
+    /**
+     * Add a new expense input to the specified container
+     * @param {string} containerId - ID of the container to add the expense input to
+     * @param {string} [className] - Optional additional class name for the expense input
+     */
+    function addExpenseInput(containerId, className = '') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const expenseInput = document.createElement('div');
+        expenseInput.className = `expense-input ${className}`.trim();
+        
+        // Determine which category options to show based on the container
+        let categoryOptions = '';
+        if (containerId === 'fixed-expense-inputs') {
+            categoryOptions = `
+                <option value="Housing">Housing</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Insurance">Insurance</option>
+                <option value="Debt Payments">Debt Payments</option>
+                <option value="Other">Other</option>
+            `;
+        } else if (containerId === 'variable-expense-inputs') {
+            categoryOptions = `
+                <option value="Food">Food</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Personal Care">Personal Care</option>
+                <option value="Other">Other</option>
+            `;
+        } else {
+            categoryOptions = `
+                <option value="Housing">Housing</option>
+                <option value="Transportation">Transportation</option>
+                <option value="Food">Food</option>
+                <option value="Utilities">Utilities</option>
+                <option value="Insurance">Insurance</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Debt Payments">Debt Payments</option>
+                <option value="Subscriptions">Subscriptions</option>
+                <option value="Education">Education</option>
+                <option value="Personal Care">Personal Care</option>
+                <option value="Other">Other</option>
+            `;
+        }
+        
+        expenseInput.innerHTML = `
+            <div class="form-group">
+                <label>Expense Category</label>
+                <select class="expense-category">
+                    ${categoryOptions}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Amount ($)</label>
+                <input type="number" class="expense-amount" min="0" step="10" value="0">
+            </div>
+            <button type="button" class="btn btn-icon remove-expense"><i class="fas fa-times"></i></button>
+        `;
+        
+        container.appendChild(expenseInput);
+    }
+
+    /**
+     * Add a new financial goal input to the form
+     */
+    function addFinancialGoalInput() {
+        const container = document.getElementById('financial-goal-inputs');
+        if (!container) return;
+        
+        const goalInput = document.createElement('div');
+        goalInput.className = 'financial-goal-input';
+        
+        goalInput.innerHTML = `
+            <div class="form-group">
+                <label>Goal Name</label>
+                <input type="text" class="goal-name" value="">
+            </div>
+            <div class="form-group">
+                <label>Target Amount ($)</label>
+                <input type="number" class="goal-target" min="0" step="100" value="0">
+            </div>
+            <div class="form-group">
+                <label>Current Amount ($)</label>
+                <input type="number" class="goal-current" min="0" step="100" value="0">
+            </div>
+            <div class="form-group">
+                <label>Allocation (%)</label>
+                <input type="number" class="goal-allocation" min="0" max="100" step="1" value="50">
+            </div>
+            <button type="button" class="btn btn-icon remove-goal"><i class="fas fa-times"></i></button>
+        `;
+        
+        container.appendChild(goalInput);
+    }
     
     // Set up retirement age range slider
     const retirementAgeSlider = document.getElementById('retirement-age');
-    if (retirementAgeSlider) {
+    const retirementAgeValue = document.getElementById('retirement-age-value');
+    if (retirementAgeSlider && retirementAgeValue) {
         retirementAgeSlider.addEventListener('input', function() {
-            document.getElementById('retirement-age-value').textContent = this.value;
+            retirementAgeValue.textContent = this.value;
         });
     }
     
-    // Add reset button functionality for retirement form
     const retirementForm = document.getElementById('retirement-form');
     if (retirementForm) {
         retirementForm.addEventListener('reset', function() {
@@ -1433,7 +1595,23 @@ async function handleRetirementCalculation(e) {
  */
 function updateRetirementChart(projectionData) {
     if (!charts.retirementProjection) {
-        // Initialize chart if it doesn't exist
+        // Initialize charts object to store chart instances
+        const charts = {};
+
+        // Define chart colors for consistent styling
+        const chartColors = [
+            'rgba(54, 162, 235, 0.7)',   // Blue
+            'rgba(255, 159, 64, 0.7)',   // Orange
+            'rgba(75, 192, 192, 0.7)',   // Green
+            'rgba(255, 99, 132, 0.7)',   // Red
+            'rgba(153, 102, 255, 0.7)',  // Purple
+            'rgba(255, 205, 86, 0.7)',   // Yellow
+            'rgba(201, 203, 207, 0.7)',  // Grey
+            'rgba(255, 99, 71, 0.7)',    // Tomato
+            'rgba(50, 205, 50, 0.7)',    // Lime Green
+            'rgba(138, 43, 226, 0.7)'    // Blue Violet
+        ];
+
         const ctx = document.getElementById('retirement-chart').getContext('2d');
         charts.retirementProjection = new Chart(ctx, {
             type: 'line',
@@ -1710,33 +1888,106 @@ function updateDebtChart(payoffData) {
 async function handleBudgetCalculation(e) {
     e.preventDefault();
     
-    const income = parseFloat(document.getElementById('budget-income').value) || 0;
-    const expenses = [];
-    
-    // Get all expense inputs
-    document.querySelectorAll('.expense-input').forEach(input => {
-        const category = input.querySelector('.expense-category').value;
-        const amount = parseFloat(input.querySelector('.expense-amount').value) || 0;
-        
-        if (amount > 0) {
-            expenses.push({ category, amount });
-        }
-    });
-    
-    if (income <= 0 || expenses.length === 0) {
-        showNotification('Please enter valid budget details', 'error');
-        return;
-    }
+    // Show loading state
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalButtonText = submitButton.innerHTML;
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Calculating...';
+    submitButton.disabled = true;
     
     try {
+        // Get basic inputs
+        const monthlyIncome = parseFloat(document.getElementById('monthly-income').value) || 0;
+        const savingsGoalPercent = parseFloat(document.getElementById('savings-goal').value) || 0;
+        
+        // Get regular expenses
+        const expenses = [];
+        document.querySelectorAll('#expense-inputs .expense-input').forEach(input => {
+            const category = input.querySelector('.expense-category').value;
+            const amount = parseFloat(input.querySelector('.expense-amount').value) || 0;
+            
+            if (amount > 0) {
+                expenses.push({ category, amount });
+            }
+        });
+        
+        // Get fixed expenses (needs)
+        const fixedExpenses = [];
+        document.querySelectorAll('#fixed-expense-inputs .expense-input').forEach(input => {
+            const category = input.querySelector('.expense-category').value;
+            const amount = parseFloat(input.querySelector('.expense-amount').value) || 0;
+            
+            if (amount > 0) {
+                fixedExpenses.push({ category, amount });
+            }
+        });
+        
+        // Get variable expenses (wants)
+        const variableExpenses = [];
+        document.querySelectorAll('#variable-expense-inputs .expense-input').forEach(input => {
+            const category = input.querySelector('.expense-category').value;
+            const amount = parseFloat(input.querySelector('.expense-amount').value) || 0;
+            
+            if (amount > 0) {
+                variableExpenses.push({ category, amount });
+            }
+        });
+        
+        // Get financial goals
+        const financialGoals = [];
+        document.querySelectorAll('#financial-goal-inputs .financial-goal-input').forEach(input => {
+            const name = input.querySelector('.goal-name').value;
+            const targetAmount = parseFloat(input.querySelector('.goal-target').value) || 0;
+            const currentAmount = parseFloat(input.querySelector('.goal-current').value) || 0;
+            const allocationPercentage = parseFloat(input.querySelector('.goal-allocation').value) || 0;
+            
+            if (name && targetAmount > 0) {
+                financialGoals.push({
+                    name,
+                    targetAmount,
+                    currentAmount,
+                    allocationPercentage
+                });
+            }
+        });
+        
+        // Validate inputs
+        if (monthlyIncome <= 0) {
+            showNotification('Please enter a valid monthly income', 'error');
+            return;
+        }
+        
+        if (expenses.length === 0 && fixedExpenses.length === 0 && variableExpenses.length === 0) {
+            showNotification('Please enter at least one expense', 'error');
+            return;
+        }
+        
+        // If no fixed/variable expenses are provided, categorize regular expenses
+        if (fixedExpenses.length === 0 && variableExpenses.length === 0 && expenses.length > 0) {
+            // Default categorization of common expenses
+            const fixedCategories = ['Housing', 'Utilities', 'Insurance', 'Debt Payments'];
+            
+            expenses.forEach(expense => {
+                if (fixedCategories.includes(expense.category)) {
+                    fixedExpenses.push(expense);
+                } else {
+                    variableExpenses.push(expense);
+                }
+            });
+        }
+        
+        // Send data to backend
         const response = await fetch('/api/calculations/budget-analysis', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                income,
-                expenses
+                monthlyIncome,
+                expenses,
+                savingsGoalPercent,
+                fixedExpenses,
+                variableExpenses,
+                financialGoals
             })
         });
         
@@ -1746,21 +1997,118 @@ async function handleBudgetCalculation(e) {
         
         const result = await response.json();
         
-        // Display results
-        document.getElementById('budget-result-income').textContent = formatCurrency(result.income);
-        document.getElementById('budget-result-expenses').textContent = formatCurrency(result.totalExpenses);
-        document.getElementById('budget-result-savings').textContent = formatCurrency(result.savings);
-        document.getElementById('budget-result-rate').textContent = `${result.savingsRate.toFixed(1)}%`;
+        // Update summary tab
+        document.getElementById('budget-income').textContent = formatCurrency(result.income);
+        document.getElementById('budget-total-expenses').textContent = formatCurrency(result.totalExpenses);
+        document.getElementById('budget-current-savings').textContent = formatCurrency(result.currentSavings);
+        document.getElementById('budget-savings-rate').textContent = `${result.savingsRate}%`;
+        document.getElementById('budget-savings-goal').textContent = formatCurrency(result.savingsGoal);
+        document.getElementById('budget-savings-gap').textContent = formatCurrency(result.savingsGap);
         
-        // Update chart
+        // Update goal status indicator
+        const goalIndicator = document.getElementById('budget-goal-indicator');
+        const goalMessage = document.getElementById('budget-goal-message');
+        
+        if (result.meetingSavingsGoal) {
+            goalIndicator.className = 'status-indicator success';
+            goalMessage.textContent = 'Meeting savings goal!';
+        } else {
+            goalIndicator.className = 'status-indicator warning';
+            goalMessage.textContent = `Not meeting savings goal. Gap: ${formatCurrency(result.savingsGap)}`;
+        }
+        
+        // Update budget distribution tab
+        document.getElementById('needs-percentage').textContent = `${result.budgetDistribution.needs.percentage}%`;
+        document.getElementById('needs-amount').textContent = formatCurrency(result.budgetDistribution.needs.amount);
+        document.getElementById('wants-percentage').textContent = `${result.budgetDistribution.wants.percentage}%`;
+        document.getElementById('wants-amount').textContent = formatCurrency(result.budgetDistribution.wants.amount);
+        document.getElementById('savings-percentage').textContent = `${result.budgetDistribution.savings.percentage}%`;
+        document.getElementById('savings-amount').textContent = formatCurrency(result.budgetDistribution.savings.amount);
+        
+        // Update progress bars
+        document.getElementById('needs-percentage-bar').style.width = `${result.budgetDistribution.needs.percentage}%`;
+        document.getElementById('wants-percentage-bar').style.width = `${result.budgetDistribution.wants.percentage}%`;
+        document.getElementById('savings-percentage-bar').style.width = `${result.budgetDistribution.savings.percentage}%`;
+        
+        // Update budget health tab
+        document.getElementById('budget-health-score').textContent = result.budgetHealth.score;
+        
+        const healthStatus = document.getElementById('budget-health-status');
+        healthStatus.textContent = result.budgetHealth.status;
+        healthStatus.className = `health-status-value ${result.budgetHealth.status.toLowerCase()}`;
+        
+        document.getElementById('budget-health-description').textContent = result.budgetHealth.description;
+        
+        // Position the health meter pointer
+        const healthMeterPointer = document.getElementById('health-meter-pointer');
+        const pointerPosition = (result.budgetHealth.score / 100) * 100;
+        healthMeterPointer.style.left = `${pointerPosition}%`;
+        
+        // Update financial goals tab
+        const goalsContainer = document.getElementById('financial-goals-results');
+        goalsContainer.innerHTML = '';
+        
+        if (result.goalsProgress && result.goalsProgress.length > 0) {
+            result.goalsProgress.forEach(goal => {
+                const goalCard = document.createElement('div');
+                goalCard.className = 'goal-card';
+                
+                goalCard.innerHTML = `
+                    <div class="goal-header">
+                        <div class="goal-name">${goal.name}</div>
+                        <div class="goal-amount">${formatCurrency(goal.currentAmount)} / ${formatCurrency(goal.targetAmount)}</div>
+                    </div>
+                    <div class="goal-progress-container">
+                        <div class="goal-progress-bar">
+                            <div class="goal-progress-fill" style="width: ${goal.progress}%"></div>
+                        </div>
+                        <div class="goal-progress-text">
+                            <div>Progress</div>
+                            <div class="goal-progress-percent">${goal.progress}%</div>
+                        </div>
+                    </div>
+                    <div class="goal-eta">
+                        ${goal.monthsToTarget > 0 ? 
+                            `Estimated time to goal: <span class="goal-eta-months">${goal.monthsToTarget} months</span>` : 
+                            '<span class="goal-eta-months">Goal reached!</span>'}
+                    </div>
+                `;
+                
+                goalsContainer.appendChild(goalCard);
+            });
+        } else {
+            goalsContainer.innerHTML = '<p class="no-goals-message">No financial goals have been set.</p>';
+        }
+        
+        // Update recommendations tab
+        const recommendationsContainer = document.getElementById('budget-recommendations');
+        recommendationsContainer.innerHTML = '';
+        
+        if (result.recommendations && result.recommendations.length > 0) {
+            result.recommendations.forEach(rec => {
+                const recItem = document.createElement('div');
+                recItem.className = `recommendation-item priority-${rec.priority || 'medium'}`;
+                recItem.textContent = rec.text;
+                recommendationsContainer.appendChild(recItem);
+            });
+        } else {
+            recommendationsContainer.innerHTML = '<p>No specific recommendations at this time.</p>';
+        }
+        
+        // Update charts
         updateBudgetChart(result.expenseBreakdown);
+        updateBudgetDistributionChart(result.budgetDistribution);
         
         // Show results section
-        document.getElementById('budget-results').classList.remove('hidden');
+        document.getElementById('budget-result').classList.remove('hidden');
         
     } catch (error) {
         console.error('Error analyzing budget:', error);
-        showNotification('Failed to analyze budget', 'error');
+        showNotification('Failed to analyze budget. Please try again.', 'error');
+    } finally {
+        // Restore button state
+        submitButton.innerHTML = originalButtonText;
+        submitButton.disabled = false;
     }
 }
 
@@ -1769,12 +2117,169 @@ async function handleBudgetCalculation(e) {
  * @param {Array} expenseBreakdown - Array of expense category data
  */
 function updateBudgetChart(expenseBreakdown) {
-    if (!charts.budgetAnalysis) return;
+    const ctx = document.getElementById('budget-chart').getContext('2d');
     
-    const labels = expenseBreakdown.map(item => item.category);
-    const data = expenseBreakdown.map(item => item.amount);
+    // If chart exists, destroy it first
+    if (charts.budget) {
+        charts.budget.destroy();
+    }
     
-    charts.budgetAnalysis.data.labels = labels;
-    charts.budgetAnalysis.data.datasets[0].data = data;
-    charts.budgetAnalysis.update();
+    // Prepare data for chart
+    const labels = [];
+    const data = [];
+    const backgroundColors = [];
+    
+    expenseBreakdown.forEach((expense, index) => {
+        labels.push(expense.category);
+        data.push(expense.amount);
+        backgroundColors.push(chartColors[index % chartColors.length]);
+    });
+    
+    // Create new chart
+    charts.budget = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                return data.labels.map(function(label, i) {
+                                    const meta = chart.getDatasetMeta(0);
+                                    const style = meta.controller.getStyle(i);
+                                    const percentage = Math.round(data.datasets[0].data[i] / data.datasets[0].data.reduce((a, b) => a + b, 0) * 100);
+                                    
+                                    return {
+                                        text: `${label}: ${percentage}%`,
+                                        fillStyle: style.backgroundColor,
+                                        strokeStyle: style.borderColor,
+                                        lineWidth: style.borderWidth,
+                                        hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${formatCurrency(value)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Update the budget distribution chart showing the 50/30/20 rule comparison
+ * @param {Object} budgetDistribution - Object containing needs, wants, and savings data
+ */
+function updateBudgetDistributionChart(budgetDistribution) {
+    const ctx = document.getElementById('budget-distribution-chart').getContext('2d');
+    
+    // If chart exists, destroy it first
+    if (charts.budgetDistribution) {
+        charts.budgetDistribution.destroy();
+    }
+    
+    // Prepare data for chart
+    const labels = ['Needs (50%)', 'Wants (30%)', 'Savings (20%)'];
+    const actualData = [
+        budgetDistribution.needs.percentage,
+        budgetDistribution.wants.percentage,
+        budgetDistribution.savings.percentage
+    ];
+    const recommendedData = [50, 30, 20];
+    
+    // Create new chart
+    charts.budgetDistribution = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Your Budget',
+                    data: actualData,
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 159, 64, 0.7)',
+                        'rgba(75, 192, 192, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1
+                },
+                {
+                    label: 'Recommended',
+                    data: recommendedData,
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 159, 64, 0.2)',
+                        'rgba(75, 192, 192, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(75, 192, 192, 1)'
+                    ],
+                    borderWidth: 1,
+                    borderDash: [5, 5]
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Percentage of Income'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.raw || 0;
+                            return `${label}: ${value}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
 }
