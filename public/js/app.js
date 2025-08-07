@@ -1282,6 +1282,7 @@ async function handleInvestmentCalculation(e) {
     } finally {
         // Restore button state
         calculateButton.disabled = false;
+        calculateButton.innerHTML = originalButtonText;
     }
 }
 
