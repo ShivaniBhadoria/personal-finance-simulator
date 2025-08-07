@@ -225,7 +225,10 @@ router.post('/budget-analysis', (req, res) => {
   const { 
     monthlyIncome, 
     expenses,
-    savingsGoalPercent
+    savingsGoalPercent,
+    fixedExpenses = [],
+    variableExpenses = [],
+    financialGoals = []
   } = req.body;
   
   if (
@@ -264,6 +267,47 @@ router.post('/budget-analysis', (req, res) => {
     amount,
     percentage: parseFloat(((amount / monthlyIncome) * 100).toFixed(2))
   }));
+
+  // Sort expense percentages by amount (descending)
+  expensePercentages.sort((a, b) => b.amount - a.amount);
+  
+  // Calculate fixed vs variable expense ratio
+  const totalFixedExpenses = fixedExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalVariableExpenses = variableExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  
+  // Calculate 50/30/20 rule comparison
+  const needs = totalFixedExpenses; // Essential expenses (50% recommended)
+  const wants = totalVariableExpenses; // Non-essential expenses (30% recommended)
+  const savings = currentSavings; // Savings and debt repayment (20% recommended)
+  
+  const needsPercentage = parseFloat(((needs / monthlyIncome) * 100).toFixed(2));
+  const wantsPercentage = parseFloat(((wants / monthlyIncome) * 100).toFixed(2));
+  const savingsPercentage = parseFloat(((savings / monthlyIncome) * 100).toFixed(2));
+  
+  // Budget health indicators
+  const budgetHealthScore = calculateBudgetHealthScore(needsPercentage, wantsPercentage, savingsPercentage);
+  
+  // Financial goals progress
+  const goalsProgress = financialGoals.map(goal => {
+    const progress = parseFloat(((goal.currentAmount / goal.targetAmount) * 100).toFixed(2));
+    const monthsToTarget = goal.targetAmount > goal.currentAmount ? 
+      Math.ceil((goal.targetAmount - goal.currentAmount) / (currentSavings * (goal.allocationPercentage / 100))) : 0;
+    
+    return {
+      ...goal,
+      progress,
+      monthsToTarget
+    };
+  });
+  
+  // Recommendations based on budget analysis
+  const recommendations = generateRecommendations(
+    needsPercentage, 
+    wantsPercentage, 
+    savingsPercentage, 
+    savingsGap, 
+    expensePercentages
+  );
   
   res.json({
     income: monthlyIncome,
@@ -273,8 +317,146 @@ router.post('/budget-analysis', (req, res) => {
     savingsGoal,
     savingsGap,
     meetingSavingsGoal: currentSavings >= savingsGoal,
-    expenseBreakdown: expensePercentages
+    expenseBreakdown: expensePercentages,
+    budgetDistribution: {
+      needs: {
+        amount: needs,
+        percentage: needsPercentage,
+        recommended: 50
+      },
+      wants: {
+        amount: wants,
+        percentage: wantsPercentage,
+        recommended: 30
+      },
+      savings: {
+        amount: savings,
+        percentage: savingsPercentage,
+        recommended: 20
+      }
+    },
+    budgetHealth: {
+      score: budgetHealthScore,
+      status: getBudgetHealthStatus(budgetHealthScore),
+      description: getBudgetHealthDescription(budgetHealthScore)
+    },
+    goalsProgress,
+    recommendations
   });
 });
+
+/**
+ * Calculate budget health score based on 50/30/20 rule and other factors
+ * @param {number} needsPercentage - Percentage of income spent on needs
+ * @param {number} wantsPercentage - Percentage of income spent on wants
+ * @param {number} savingsPercentage - Percentage of income saved
+ * @returns {number} - Budget health score (0-100)
+ */
+function calculateBudgetHealthScore(needsPercentage, wantsPercentage, savingsPercentage) {
+  // Ideal distribution: 50% needs, 30% wants, 20% savings
+  const needsScore = needsPercentage <= 50 ? 100 : Math.max(0, 100 - ((needsPercentage - 50) * 2));
+  const wantsScore = wantsPercentage <= 30 ? 100 : Math.max(0, 100 - ((wantsPercentage - 30) * 3));
+  const savingsScore = savingsPercentage >= 20 ? 100 : Math.max(0, savingsPercentage * 5);
+  
+  // Weight the scores (needs: 40%, wants: 30%, savings: 30%)
+  return Math.round((needsScore * 0.4) + (wantsScore * 0.3) + (savingsScore * 0.3));
+}
+
+/**
+ * Get budget health status based on score
+ * @param {number} score - Budget health score
+ * @returns {string} - Budget health status
+ */
+function getBudgetHealthStatus(score) {
+  if (score >= 80) return 'Excellent';
+  if (score >= 60) return 'Good';
+  if (score >= 40) return 'Fair';
+  if (score >= 20) return 'Poor';
+  return 'Critical';
+}
+
+/**
+ * Get budget health description based on score
+ * @param {number} score - Budget health score
+ * @returns {string} - Budget health description
+ */
+function getBudgetHealthDescription(score) {
+  if (score >= 80) return 'Your budget is well-balanced and sustainable.';
+  if (score >= 60) return 'Your budget is generally healthy but has room for improvement.';
+  if (score >= 40) return 'Your budget needs attention in several areas.';
+  if (score >= 20) return 'Your budget is at risk and requires significant adjustments.';
+  return 'Your budget is in critical condition and needs immediate restructuring.';
+}
+
+/**
+ * Generate personalized recommendations based on budget analysis
+ * @param {number} needsPercentage - Percentage of income spent on needs
+ * @param {number} wantsPercentage - Percentage of income spent on wants
+ * @param {number} savingsPercentage - Percentage of income saved
+ * @param {number} savingsGap - Gap between current savings and goal
+ * @param {Array} expenseBreakdown - Breakdown of expenses by category
+ * @returns {Array} - List of recommendations
+ */
+function generateRecommendations(needsPercentage, wantsPercentage, savingsPercentage, savingsGap, expenseBreakdown) {
+  const recommendations = [];
+  
+  // Check needs percentage
+  if (needsPercentage > 50) {
+    recommendations.push({
+      category: 'Needs',
+      priority: 'High',
+      description: `Your essential expenses (${needsPercentage.toFixed(1)}%) exceed the recommended 50%. Consider finding ways to reduce housing, transportation, or utility costs.`
+    });
+  }
+  
+  // Check wants percentage
+  if (wantsPercentage > 30) {
+    recommendations.push({
+      category: 'Wants',
+      priority: 'Medium',
+      description: `Your discretionary spending (${wantsPercentage.toFixed(1)}%) exceeds the recommended 30%. Look for opportunities to reduce non-essential expenses.`
+    });
+  }
+  
+  // Check savings percentage
+  if (savingsPercentage < 20) {
+    recommendations.push({
+      category: 'Savings',
+      priority: 'High',
+      description: `Your savings rate (${savingsPercentage.toFixed(1)}%) is below the recommended 20%. Aim to increase your savings by reducing expenses or increasing income.`
+    });
+  }
+  
+  // Check for high expense categories
+  const highExpenseCategories = expenseBreakdown.filter(expense => expense.percentage > 30);
+  if (highExpenseCategories.length > 0) {
+    highExpenseCategories.forEach(category => {
+      recommendations.push({
+        category: category.category,
+        priority: 'Medium',
+        description: `${category.category} accounts for ${category.percentage.toFixed(1)}% of your income, which is relatively high. Consider ways to optimize this expense.`
+      });
+    });
+  }
+  
+  // Add general recommendations if we don't have many specific ones
+  if (recommendations.length < 3) {
+    if (savingsGap > 0) {
+      recommendations.push({
+        category: 'Savings Goal',
+        priority: 'Medium',
+        description: `You're $${savingsGap.toFixed(2)} short of your monthly savings goal. Consider increasing income or reducing expenses to bridge this gap.`
+      });
+    }
+    
+    recommendations.push({
+      category: 'Emergency Fund',
+      priority: 'Medium',
+      description: 'Aim to build an emergency fund covering 3-6 months of expenses for financial security.'
+    });
+  }
+  
+  return recommendations;
+}
 
 module.exports = router;
