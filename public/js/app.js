@@ -1096,8 +1096,10 @@ function updateNetWorthChart(scenarios) {
             // Previous year's balance plus this year's savings and growth
             const prevYearAmount = data[year - 1];
             const yearSavings = monthlySavings * 12;
+            // Calculate growth only on the previous year's amount
             const yearGrowth = prevYearAmount * avgReturnRate;
             
+            // Add previous amount, savings for this year, and growth on previous amount
             data[year] += prevYearAmount + yearSavings + yearGrowth;
         }
     });
@@ -1282,6 +1284,7 @@ async function handleInvestmentCalculation(e) {
     } finally {
         // Restore button state
         calculateButton.disabled = false;
+        calculateButton.innerHTML = originalButtonText;
     }
 }
 
