@@ -133,9 +133,19 @@ router.post('/debt-payoff', (req, res) => {
     });
   }
   
+  // Validate minimum payment
   const monthlyRate = interestRate / 100 / 12;
+  const minimumPayment = debtAmount * monthlyRate;
+  
+  if (monthlyPayment <= minimumPayment && interestRate > 0) {
+    return res.status(400).json({
+      message: `Monthly payment must be greater than minimum interest payment of $${minimumPayment.toFixed(2)}`
+    });
+  }
+  
   let balance = debtAmount;
   let month = 0;
+  let totalInterest = 0;
   const payoffData = [];
   
   // Calculate how long it will take to pay off the debt
@@ -144,6 +154,7 @@ router.post('/debt-payoff', (req, res) => {
     
     // Calculate interest for this month
     const interest = balance * monthlyRate;
+    totalInterest += interest;
     
     // Calculate payment for this month (don't overpay)
     const payment = Math.min(monthlyPayment, balance + interest);
@@ -152,13 +163,49 @@ router.post('/debt-payoff', (req, res) => {
     balance = balance + interest - payment;
     
     // Store data point (yearly or first/last month)
-    if (month % 12 === 0 || month === 1 || balance <= 0) {
+    if (month % 12 === 0 || month === 1 || balance <= 0 || month % 3 === 0) {
       payoffData.push({
         month,
-        year: Math.ceil(month / 12),
-        balance: parseFloat(balance.toFixed(2)),
+        year: parseFloat((month / 12).toFixed(1)),
+        balance: parseFloat(Math.max(0, balance).toFixed(2)),
         interest: parseFloat(interest.toFixed(2)),
-        payment: parseFloat(payment.toFixed(2))
+        payment: parseFloat(payment.toFixed(2)),
+        totalInterestToDate: parseFloat(totalInterest.toFixed(2))
+      });
+    }
+  }
+  
+  // If we hit the cap, return an error
+  if (month >= 1200) {
+    return res.status(400).json({
+      message: 'With the current payment amount, this debt will take too long to pay off. Please increase your monthly payment.'
+    });
+  }
+  
+  // Calculate savings with different payment strategies
+  const strategies = [];
+  
+  // Strategy 1: Pay 10% more each month
+  if (monthlyPayment * 1.1 < monthlyPayment + 1000) {
+    const additionalPayment = parseFloat((monthlyPayment * 0.1).toFixed(2));
+    const newPayment = monthlyPayment + additionalPayment;
+    let newBalance = debtAmount;
+    let newMonth = 0;
+    let newTotalInterest = 0;
+    
+    while (newBalance > 0 && newMonth < 1200) {
+      newMonth++;
+      const interest = newBalance * monthlyRate;
+      newTotalInterest += interest;
+      const payment = Math.min(newPayment, newBalance + interest);
+      newBalance = newBalance + interest - payment;
+    }
+    
+    if (newMonth < month) {
+      strategies.push({
+        description: `Paying an extra $${additionalPayment} per month`,
+        monthsSaved: month - newMonth,
+        interestSaved: parseFloat((totalInterest - newTotalInterest).toFixed(2))
       });
     }
   }
@@ -166,9 +213,10 @@ router.post('/debt-payoff', (req, res) => {
   res.json({
     monthsToPayoff: month,
     yearsToPayoff: parseFloat((month / 12).toFixed(2)),
-    totalInterestPaid: parseFloat((payoffData.reduce((sum, data) => sum + data.interest, 0)).toFixed(2)),
-    totalPaid: parseFloat((debtAmount + payoffData.reduce((sum, data) => sum + data.interest, 0)).toFixed(2)),
-    payoffData
+    totalInterestPaid: parseFloat(totalInterest.toFixed(2)),
+    totalPaid: parseFloat((debtAmount + totalInterest).toFixed(2)),
+    payoffData,
+    strategies
   });
 });
 
